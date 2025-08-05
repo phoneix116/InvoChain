@@ -70,7 +70,6 @@ async function uploadToPinata(fileBuffer, metadata) {
       {
         maxBodyLength: 'Infinity',
         headers: {
-          'Content-Type': `multipart/form-data; boundary=${formData._boundary}`,
           'pinata_api_key': process.env.PINATA_API_KEY,
           'pinata_secret_api_key': process.env.PINATA_SECRET_KEY,
           ...formHeaders
@@ -110,7 +109,6 @@ async function uploadToWeb3Storage(fileBuffer, metadata) {
       {
         headers: {
           'Authorization': `Bearer ${process.env.WEB3_STORAGE_TOKEN}`,
-          'Content-Type': `multipart/form-data; boundary=${formData._boundary}`,
         },
       }
     );

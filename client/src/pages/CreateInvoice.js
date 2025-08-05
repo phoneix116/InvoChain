@@ -129,23 +129,17 @@ const CreateInvoice = () => {
 
   const handleSubmit = async () => {
     try {
-      // Structure the invoice data to match API expectations
+      // The InvoiceContext's createInvoice function expects a 'recipient' field
+      // with the wallet address for the blockchain transaction.
       const apiData = {
         title: formData.title,
         description: formData.description,
         amount: formData.amount,
         dueDate: formData.dueDate,
         tokenAddress: formData.tokenAddress,
+        recipient: formData.recipientAddress, // Use 'recipient' for the address
         recipientName: formData.recipientName,
         recipientEmail: formData.recipientEmail || '',
-        recipientAddress: formData.recipientAddress,
-        walletAddress: account, // Add user's wallet address
-        // Structure recipient as object for backend
-        recipient: {
-          name: formData.recipientName,
-          email: formData.recipientEmail || '',
-          walletAddress: formData.recipientAddress
-        }
       };
 
       // Call the InvoiceContext's createInvoice function which handles both MongoDB and blockchain

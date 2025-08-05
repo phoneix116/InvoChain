@@ -148,11 +148,10 @@ export const InvoiceProvider = ({ children }) => {
 
       // Update the invoice in MongoDB with blockchain transaction details
       if (blockchainInvoiceId) {
-        await invoiceAPI.updateInvoice(invoice._id, {
-          blockchainId: blockchainInvoiceId,
+        await invoiceAPI.updateInvoiceStatus(invoice.invoiceId, {
+          status: 'pending',
           transactionHash: receipt.transactionHash,
-          blockNumber: receipt.blockNumber,
-          status: 'pending'
+          blockNumber: receipt.blockNumber
         });
       }
 

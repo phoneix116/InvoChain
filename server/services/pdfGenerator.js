@@ -59,7 +59,7 @@ class InvoicePDFGenerator {
       });
       
       // Invoice number and date (right aligned)
-      const invoiceText = `Invoice #${invoiceData.id || 'N/A'}`;
+      const invoiceText = `Invoice #${invoiceData.invoiceId || 'N/A'}`;
       const dateText = `Date: ${formatDate(invoiceData.createdAt || new Date())}`;
       
       page.drawText(invoiceText, {
