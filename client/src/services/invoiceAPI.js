@@ -370,19 +370,21 @@ const invoiceAPI = {
 
   // Generate PDF preview without uploading to IPFS
   previewInvoicePDF: async (invoiceData) => {
-    const { recipient, amount, description, dueDate, title } = invoiceData;
-    
+    const { recipientAddress, recipientName, recipientEmail, amount, description, dueDate, title } = invoiceData;
+
     const response = await fetch(`${API_BASE_URL}/api/invoice/preview`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        recipient,
+        recipientAddress,
+        recipientName,
+        recipientEmail,
         amount: amount.toString(),
         description,
         dueDate: new Date(dueDate).toISOString(),
-        title: title || 'Blockchain Invoice'
+        title: title || 'Blockchain Invoice',
       }),
     });
 

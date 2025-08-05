@@ -589,53 +589,28 @@ router.get('/export', async (req, res) => {
 
 // Validation schema for invoice generation
 const generateInvoiceSchema = Joi.object({
-  // Support both old format (single recipient) and new format (separate fields)
-  recipient: Joi.alternatives().try(
-    Joi.string().pattern(/^0x[a-fA-F0-9]{40}$/),
-    Joi.object({
-      name: Joi.string().min(1).max(100).required(),
-      email: Joi.string().email().optional().allow(''),
-      walletAddress: Joi.string().pattern(/^0x[a-fA-F0-9]{40}$/).required()
-    })
-  ).optional(),
-  
-  // New separate recipient fields
-  recipientName: Joi.string().min(1).max(100).optional(),
+  recipientAddress: Joi.string().pattern(/^0x[a-fA-F0-9]{40}$/).required().messages({
+    'string.pattern.base': 'Recipient address must be a valid Ethereum address',
+    'any.required': 'Recipient address is required'
+  }),
+  recipientName: Joi.string().min(1).max(100).required().messages({
+    'string.empty': 'Recipient name is required'
+  }),
   recipientEmail: Joi.string().email().optional().allow(''),
-  recipientAddress: Joi.string().pattern(/^0x[a-fA-F0-9]{40}$/).optional(),
-  
   amount: Joi.alternatives().try(
     Joi.string().required(),
     Joi.number().positive().required()
   ).messages({
     'any.required': 'Amount is required'
   }),
-  description: Joi.string().min(1).max(500).optional().default('')
-    .messages({
-      'string.max': 'Description cannot exceed 500 characters'
-    }),
-  dueDate: Joi.date().iso().required()
-    .messages({
-      'date.base': 'Due date must be a valid date'
-    }),
-  title: Joi.string().min(1).max(100).required()
-    .messages({
-      'string.empty': 'Title is required'
-    }),
+  description: Joi.string().max(500).optional().allow('').default(''),
+  dueDate: Joi.date().iso().required().messages({
+    'date.base': 'Due date must be a valid date'
+  }),
+  title: Joi.string().min(1).max(100).required().messages({
+    'string.empty': 'Title is required'
+  }),
   tokenAddress: Joi.string().optional().allow('')
-}).custom((value, helpers) => {
-  // Ensure we have recipient information in some form
-  const hasOldFormat = value.recipient && typeof value.recipient === 'string';
-  const hasNewObjectFormat = value.recipient && typeof value.recipient === 'object';
-  const hasNewFieldsFormat = value.recipientName && value.recipientAddress;
-  
-  if (!hasOldFormat && !hasNewObjectFormat && !hasNewFieldsFormat) {
-    return helpers.error('custom.missingRecipient');
-  }
-  
-  return value;
-}, 'Recipient validation').messages({
-  'custom.missingRecipient': 'Recipient information is required (either recipient field or recipientName + recipientAddress)'
 });
 
 // POST /api/invoice/generate - Generate invoice with PDF automatically
@@ -863,29 +838,12 @@ router.post('/preview', async (req, res) => {
       });
     }
 
-    // Normalize the invoice data for PDF generation
+    // Prepare the data for the PDF generator from the validated input
     const invoiceData = {
       ...value,
+      recipient: value.recipientAddress, // Use recipientAddress for the PDF
       createdAt: new Date().toISOString()
     };
-
-    // Normalize recipient data for PDF generator
-    if (value.recipientName && value.recipientAddress) {
-      // New format with separate fields
-      invoiceData.recipient = value.recipientAddress;
-      invoiceData.recipientName = value.recipientName;
-      invoiceData.recipientEmail = value.recipientEmail || '';
-    } else if (value.recipient && typeof value.recipient === 'object') {
-      // Nested object format
-      invoiceData.recipient = value.recipient.walletAddress;
-      invoiceData.recipientName = value.recipient.name;
-      invoiceData.recipientEmail = value.recipient.email || '';
-    } else if (value.recipient && typeof value.recipient === 'string') {
-      // Old format - just the address
-      invoiceData.recipient = value.recipient;
-      invoiceData.recipientName = 'N/A';
-      invoiceData.recipientEmail = '';
-    }
 
     // Generate PDF
     const pdfBytes = await pdfGenerator.generateInvoicePDF(invoiceData);
