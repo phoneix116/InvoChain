@@ -97,11 +97,6 @@ const CreateInvoice = () => {
         recipientName: formData.recipientName,
         recipientEmail: formData.recipientEmail || '',
         recipientAddress: formData.recipientAddress,
-        recipient: {
-          name: formData.recipientName,
-          email: formData.recipientEmail || '',
-          walletAddress: formData.recipientAddress
-        }
       };
       
       const blob = await invoiceAPI.previewInvoicePDF(pdfData);
