@@ -111,7 +111,7 @@ export const InvoiceProvider = ({ children }) => {
         userInfo
       );
 
-      const { invoice, pdf, error } = result;
+  const { invoice, pdf, error } = result;
       
       // Handle partial success (metadata created but PDF upload failed)
       if (error) {
@@ -121,8 +121,11 @@ export const InvoiceProvider = ({ children }) => {
         setLoading(false);
         return { success: false, invoice, error };
       }
-      
-      if (!pdf || !pdf.ipfsHash) {
+  // Extract upload details from server response
+  const ipfsHash = pdf?.data?.ipfsHash || pdf?.ipfsHash;
+  const downloadUrl = pdf?.data?.downloadUrl || pdf?.downloadUrl;
+  const storage = pdf?.data?.storage || 'unknown';
+      if (!ipfsHash) {
         throw new Error('Failed to upload PDF to IPFS');
       }
 
@@ -131,7 +134,7 @@ export const InvoiceProvider = ({ children }) => {
 
       // Create invoice on blockchain
       const tx = await contract.createInvoice(
-        pdf.ipfsHash,
+        ipfsHash,
         invoiceData.recipient,
         ethers.utils.parseEther(invoiceData.amount.toString()),
         invoiceData.tokenAddress || ethers.constants.AddressZero,
@@ -165,7 +168,9 @@ export const InvoiceProvider = ({ children }) => {
         invoiceId: blockchainInvoiceId,
         mongoId: invoice._id,
         txHash: receipt.transactionHash,
-        ipfsHash: pdf.ipfsHash
+        ipfsHash,
+        downloadUrl,
+        storage
       };
     } catch (error) {
       console.error('Failed to create invoice:', error);

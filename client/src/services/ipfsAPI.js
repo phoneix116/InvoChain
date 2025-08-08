@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3002';
 
 const api = axios.create({
   baseURL: `${API_BASE_URL}/api/ipfs`,
@@ -41,7 +41,7 @@ const ipfsAPI = {
   },
 
   // Get file info from IPFS
-  getFileInfo: (hash) => api.get(`/file/${hash}`),
+  getFileInfo: (hash) => api.get(`/info/${hash}`),
 
   // Pin existing IPFS hash
   pinHash: (hash) => api.post(`/pin/${hash}`),
@@ -61,7 +61,7 @@ const ipfsAPI = {
   // Download file from IPFS - Direct Pinata gateway access
   downloadFile: async (hash) => {
     // Primary: Use Pinata gateway directly
-    const pinataGateway = process.env.REACT_APP_IPFS_GATEWAY || 'https://cyan-glamorous-tarsier-110.mypinata.cloud/ipfs/';
+  const pinataGateway = process.env.REACT_APP_IPFS_GATEWAY || 'https://gateway.pinata.cloud/ipfs/';
     const directUrl = `${pinataGateway}${hash}`;
     
     try {

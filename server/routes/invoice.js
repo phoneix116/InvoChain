@@ -19,7 +19,8 @@ const invoiceMetadataSchema = Joi.object({
   invoiceId: Joi.string().required(),
   walletAddress: Joi.string().required(), // User's wallet address
   title: Joi.string().min(1).max(200).required(),
-  description: Joi.string().max(1000).optional(),
+  // Allow empty description strings from UI
+  description: Joi.string().max(1000).optional().allow('').default(''),
   amount: Joi.number().positive().required(),
   currency: Joi.string().valid('ETH', 'USD', 'EUR', 'GBP', 'USDC', 'DAI').default('ETH'),
   dueDate: Joi.date().iso().required(),
@@ -593,9 +594,8 @@ const generateInvoiceSchema = Joi.object({
     'string.pattern.base': 'Recipient address must be a valid Ethereum address',
     'any.required': 'Recipient address is required'
   }),
-  recipientName: Joi.string().min(1).max(100).required().messages({
-    'string.empty': 'Recipient name is required'
-  }),
+  // Name should be optional for quick creation/preview
+  recipientName: Joi.string().max(100).optional().allow(''),
   recipientEmail: Joi.string().email().optional().allow(''),
   amount: Joi.alternatives().try(
     Joi.string().required(),
@@ -611,7 +611,7 @@ const generateInvoiceSchema = Joi.object({
     'string.empty': 'Title is required'
   }),
   tokenAddress: Joi.string().optional().allow('')
-});
+}).unknown(true);
 
 // POST /api/invoice/generate - Generate invoice with PDF automatically
 router.post('/generate', async (req, res) => {
@@ -736,7 +736,9 @@ router.post('/generate', async (req, res) => {
           formData,
           {
             headers,
-            timeout: 60000 // 60 second timeout
+            timeout: 60000, // 60 second timeout
+            maxBodyLength: Infinity,
+            maxContentLength: Infinity
           }
         );
 
@@ -758,15 +760,19 @@ router.post('/generate', async (req, res) => {
       } catch (pinataError) {
         console.error('❌ Pinata upload failed:', pinataError.message);
         console.error('Error details:', pinataError.response?.data || 'No response data');
-        console.log('📁 Falling back to local storage...');
-        // Use fallback instead of throwing
-        useFallbackStorage = true;
+        // Strict mode: if Pinata is configured and enabled, do NOT fallback silently
+        return res.status(502).json({
+          success: false,
+          error: 'Pinata upload failed',
+          message: pinataError.message,
+          details: pinataError.response?.data || null
+        });
       }
     } else {
-      // If Pinata creds aren't set / disabled / forced local
+      // If Pinata creds aren't set or disabled or forced local, then use local storage
       useFallbackStorage = true;
       console.log('📝 Using local storage for PDF', 
-        forceLocalStorage ? '(forced)' : pinataDisabled ? '(PINATA_DISABLED=true)' : (!haveJWT && !haveKeyPair ? '(no credentials)' : '(as configured)'));
+        forceLocalStorage ? '(forced)' : pinataDisabled ? '(PINATA_DISABLED=true)' : '(no credentials)');
     }
     
     // Use local storage if needed
@@ -806,12 +812,20 @@ router.post('/generate', async (req, res) => {
       console.log('✅ Generated PDF saved locally:', fileName);
     }
 
+    // Build download URL: if using Pinata (not disabled and uploaded), use gateway; otherwise use backend local file route
+    const baseGateway = process.env.REACT_APP_IPFS_GATEWAY || process.env.IPFS_GATEWAY;
+    const preferGateway = !useFallbackStorage && !!baseGateway;
+  const downloadUrl = preferGateway
+      ? `${baseGateway}${ipfsResult.ipfsHash}`
+      : `${req.protocol}://${req.headers.host}/api/ipfs/file/${ipfsResult.ipfsHash}`;
+  const storage = useFallbackStorage ? 'local' : 'pinata';
+
     // Return success response
     res.json({
       success: true,
       message: 'Invoice PDF generated and uploaded successfully',
       data: {
-        ipfsHash: ipfsResult.ipfsHash,
+  ipfsHash: ipfsResult.ipfsHash,
         fileName: metadata.filename,
         size: ipfsResult.size,
         invoiceData: {
@@ -822,9 +836,8 @@ router.post('/generate', async (req, res) => {
           title,
           createdAt: invoiceData.createdAt
         },
-        downloadUrl: process.env.IPFS_GATEWAY ? 
-          `${process.env.IPFS_GATEWAY}${ipfsResult.ipfsHash}` : 
-          `http://localhost:3001/api/ipfs/file/${ipfsResult.ipfsHash}`
+  downloadUrl,
+  storage
       }
     });
 

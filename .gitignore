@@ -127,12 +127,13 @@ ipfs/
 server/uploads/
 
 # Local test scripts & generated test artifacts at repo root
-test-*.js
-*test*.pdf
-generated-*.pdf
-preview-test.pdf
-test-workflow.pdf
-test-preview.pdf
+/test-*.js
+/*-test.js
+/*test*.pdf
+/generated-*.pdf
+/preview-test.pdf
+/test-workflow.pdf
+/test-preview.pdf
 
 # Test coverage
 coverage.json

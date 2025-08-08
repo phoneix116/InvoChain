@@ -49,7 +49,7 @@ const InvoiceDetails = () => {
     if (invoice?.ipfsHash) {
       try {
         // Download directly from Pinata gateway
-        const pinataGateway = process.env.REACT_APP_IPFS_GATEWAY || 'https://cyan-glamorous-tarsier-110.mypinata.cloud/ipfs/';
+  const pinataGateway = process.env.REACT_APP_IPFS_GATEWAY || 'https://gateway.pinata.cloud/ipfs/';
         const directUrl = `${pinataGateway}${invoice.ipfsHash}`;
         
         console.log('Downloading PDF from Pinata:', directUrl);
@@ -90,7 +90,7 @@ const InvoiceDetails = () => {
         // Fallback to backend API
         try {
           console.log('Trying fallback download via backend...');
-          const fallbackResponse = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/ipfs/file/${invoice.ipfsHash}`);
+          const fallbackResponse = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3002'}/api/ipfs/file/${invoice.ipfsHash}`);
           
           if (!fallbackResponse.ok) {
             throw new Error(`Backend fallback failed: ${fallbackResponse.status}`);

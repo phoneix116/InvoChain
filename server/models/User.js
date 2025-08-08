@@ -74,7 +74,7 @@ const userSchema = new mongoose.Schema({
 
 // Indexes for better performance (avoid duplicating inline indexes)
 // walletAddress already has unique + index at the field level
-userSchema.index({ email: 1 });
+// email is present at the field level; avoid duplicating
 userSchema.index({ createdAt: -1 });
 userSchema.index({ lastActive: -1 });
 

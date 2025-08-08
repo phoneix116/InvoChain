@@ -156,12 +156,13 @@ const CreateInvoice = () => {
       }
       
       // Handle full success
-      if (result && result.invoiceId) {
+  if (result && result.invoiceId) {
         toast.success(
           <div>
             <div>Invoice created successfully!</div>
             <div>Invoice ID: {result.invoiceId}</div>
-            {result.ipfsHash && <div>PDF stored on IPFS: {result.ipfsHash}</div>}
+    {result.ipfsHash && <div>PDF stored on IPFS: {result.ipfsHash}</div>}
+    {result.storage && <div>Storage: {result.storage}</div>}
           </div>
         );
         

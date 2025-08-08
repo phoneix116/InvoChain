@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3002';
 
 const api = axios.create({
   baseURL: `${API_BASE_URL}/api/invoice`,
@@ -355,17 +355,20 @@ const invoiceAPI = {
 
   // Download generated PDF
   downloadGeneratedPDF: async (ipfsHash) => {
-    const gatewayUrl = process.env.REACT_APP_IPFS_GATEWAY || 'http://localhost:3001/api/ipfs/file/';
-    const url = gatewayUrl.includes('gateway.pinata.cloud') 
-      ? `${gatewayUrl}${ipfsHash}`
-      : `${API_BASE_URL}/api/ipfs/file/${ipfsHash}`;
-      
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error('Failed to download PDF');
+    const gatewayUrl = process.env.REACT_APP_IPFS_GATEWAY || `${API_BASE_URL}/api/ipfs/file/`;
+    const directUrl = `${gatewayUrl}${ipfsHash}`;
+    const backendUrl = `${API_BASE_URL}/api/ipfs/file/${ipfsHash}`;
+
+    // Try direct gateway first, then fallback to backend proxy
+    try {
+      const response = await fetch(directUrl);
+      if (!response.ok) throw new Error(`Gateway failed: ${response.status}`);
+      return await response.blob();
+    } catch (e) {
+      const resp2 = await fetch(backendUrl);
+      if (!resp2.ok) throw new Error('Failed to download PDF');
+      return await resp2.blob();
     }
-    
-    return response.blob();
   },
 
   // Generate PDF preview without uploading to IPFS
@@ -389,7 +392,16 @@ const invoiceAPI = {
     });
 
     if (!response.ok) {
-      throw new Error('Failed to generate PDF preview');
+      let msg = 'Failed to generate PDF preview';
+      try {
+        const err = await response.json();
+        if (err?.details) {
+          msg = `${msg}: ${Array.isArray(err.details) ? err.details.join('; ') : err.details}`;
+        } else if (err?.message) {
+          msg = `${msg}: ${err.message}`;
+        }
+      } catch {}
+      throw new Error(msg);
     }
 
     return response.blob();

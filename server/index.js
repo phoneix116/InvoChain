@@ -115,8 +115,8 @@ app.get('/', (req, res) => {
       ipfs: '/api/ipfs/*',
       contract: '/api/contract/*',
       invoice: '/api/invoice/*'
-    },
-    documentation: 'https://localhost:3001'
+  },
+  documentation: `http://localhost:${process.env.PORT || 3001}`
   });
 });
 

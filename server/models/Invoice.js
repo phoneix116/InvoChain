@@ -183,8 +183,7 @@ const invoiceSchema = new mongoose.Schema({
 
 // Indexes for better performance (avoid duplicating inline indexes)
 // invoiceId has unique + index at the field level
-invoiceSchema.index({ userId: 1 });
-invoiceSchema.index({ status: 1 });
+// userId and status already have indexes at the field level, avoid duplicating them here
 invoiceSchema.index({ 'issuer.walletAddress': 1 });
 invoiceSchema.index({ 'recipient.walletAddress': 1 });
 invoiceSchema.index({ dueDate: 1 });

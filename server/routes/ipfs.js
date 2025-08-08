@@ -79,13 +79,14 @@ async function uploadToPinata(fileBuffer, metadata) {
       headers['pinata_secret_api_key'] = process.env.PINATA_SECRET_KEY;
     }
 
-    const response = await axios.post(
+  const response = await axios.post(
       'https://api.pinata.cloud/pinning/pinFileToIPFS',
       formData,
       {
-        maxBodyLength: 'Infinity',
-        headers,
-        timeout: 60000 // 60 second timeout
+    maxBodyLength: Infinity,
+    maxContentLength: Infinity,
+    headers,
+    timeout: 60000 // 60 second timeout
       }
     );
 
@@ -311,8 +312,8 @@ router.post('/upload', upload.single('file'), async (req, res) => {
   }
 });
 
-// Get file info from IPFS
-router.get('/file/:hash', async (req, res) => {
+// Get file info from IPFS (metadata only)
+router.get('/info/:hash', async (req, res) => {
   try {
     const { hash } = req.params;
     
