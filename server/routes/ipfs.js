@@ -298,7 +298,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
         size: metadata.size,
         uploadedAt: result.timestamp
       },
-      gateway: `${process.env.REACT_APP_IPFS_GATEWAY || 'https://ipfs.io/ipfs/'}${result.ipfsHash}`,
+  gateway: `${process.env.REACT_APP_IPFS_GATEWAY || process.env.IPFS_GATEWAY || 'https://ipfs.io/ipfs/'}${result.ipfsHash}`,
       message: 'File uploaded successfully to IPFS'
     });
 
@@ -357,7 +357,7 @@ router.get('/file/:hash', async (req, res) => {
     res.json({
       success: true,
       ipfsHash: hash,
-      gateway: `${process.env.REACT_APP_IPFS_GATEWAY || 'https://ipfs.io/ipfs/'}${hash}`,
+  gateway: `${process.env.REACT_APP_IPFS_GATEWAY || process.env.IPFS_GATEWAY || 'https://ipfs.io/ipfs/'}${hash}`,
       metadata: metadata,
       message: 'IPFS file info retrieved'
     });
@@ -459,12 +459,12 @@ router.get('/pins', async (req, res) => {
       }
     );
 
-    const pins = response.data.rows.map(pin => ({
+  const pins = response.data.rows.map(pin => ({
       ipfsHash: pin.ipfs_pin_hash,
       size: pin.size,
       uploadedAt: pin.date_pinned,
       metadata: pin.metadata,
-      gateway: `${process.env.REACT_APP_IPFS_GATEWAY || 'https://ipfs.io/ipfs/'}${pin.ipfs_pin_hash}`
+  gateway: `${process.env.REACT_APP_IPFS_GATEWAY || process.env.IPFS_GATEWAY || 'https://ipfs.io/ipfs/'}${pin.ipfs_pin_hash}`
     }));
 
     res.json({
