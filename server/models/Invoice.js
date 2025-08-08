@@ -181,8 +181,8 @@ const invoiceSchema = new mongoose.Schema({
   collection: 'invoices'
 });
 
-// Indexes for better performance
-invoiceSchema.index({ invoiceId: 1 });
+// Indexes for better performance (avoid duplicating inline indexes)
+// invoiceId has unique + index at the field level
 invoiceSchema.index({ userId: 1 });
 invoiceSchema.index({ status: 1 });
 invoiceSchema.index({ 'issuer.walletAddress': 1 });
@@ -191,7 +191,7 @@ invoiceSchema.index({ dueDate: 1 });
 invoiceSchema.index({ createdAt: -1 });
 invoiceSchema.index({ amount: 1 });
 invoiceSchema.index({ category: 1 });
-invoiceSchema.index({ 'blockchain.transactionHash': 1 });
+// transactionHash is marked sparse at the field level; avoid duplicating
 
 // Compound indexes
 invoiceSchema.index({ userId: 1, status: 1 });

@@ -118,8 +118,8 @@ const templateSchema = new mongoose.Schema({
   collection: 'templates'
 });
 
-// Indexes
-templateSchema.index({ userId: 1 });
+// Indexes (avoid duplicating inline indexes)
+// userId has index at the field level
 templateSchema.index({ category: 1 });
 templateSchema.index({ 'sharing.isPublic': 1 });
 templateSchema.index({ 'sharing.isDefault': 1 });

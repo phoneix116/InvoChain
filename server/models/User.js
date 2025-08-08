@@ -72,8 +72,8 @@ const userSchema = new mongoose.Schema({
   collection: 'users'
 });
 
-// Indexes for better performance
-userSchema.index({ walletAddress: 1 });
+// Indexes for better performance (avoid duplicating inline indexes)
+// walletAddress already has unique + index at the field level
 userSchema.index({ email: 1 });
 userSchema.index({ createdAt: -1 });
 userSchema.index({ lastActive: -1 });
