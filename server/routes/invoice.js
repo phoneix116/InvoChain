@@ -682,15 +682,23 @@ router.post('/generate', async (req, res) => {
     };
 
     // Upload PDF to IPFS (Pinata or local storage)
-    let ipfsResult;
-    let useFallbackStorage = false;
+  let ipfsResult;
+  let useFallbackStorage = false;
     
     // For testing: Force local storage by setting this to true
     const forceLocalStorage = false; // Change to true to bypass Pinata completely
-    
-    if (!forceLocalStorage && process.env.PINATA_API_KEY && process.env.PINATA_SECRET_KEY) {
+    const pinataDisabled = (process.env.PINATA_DISABLED || '').toLowerCase() === 'true' || process.env.PINATA_DISABLED === '1';
+
+    const haveJWT = !!process.env.PINATA_JWT;
+    const haveKeyPair = !!process.env.PINATA_API_KEY && !!process.env.PINATA_SECRET_KEY;
+
+    if (!forceLocalStorage && !pinataDisabled && (haveJWT || haveKeyPair)) {
       console.log('📤 Uploading generated PDF to Pinata IPFS...');
-      console.log('🔑 Using Pinata API Key:', process.env.PINATA_API_KEY.substring(0, 5) + '...');
+      if (haveJWT) {
+        console.log('🔑 Using Pinata JWT (Authorization header)');
+      } else {
+        console.log('🔑 Using Pinata API Key:', String(process.env.PINATA_API_KEY).substring(0, 5) + '...');
+      }
       
       const formData = new FormData();
       formData.append('file', Buffer.from(pdfBytes), {
@@ -714,15 +722,20 @@ router.post('/generate', async (req, res) => {
           Object.assign(formHeaders, formData.getHeaders());
         }
         
+        // Build headers preferring JWT when available
+        const headers = { ...formHeaders };
+        if (haveJWT) {
+          headers['Authorization'] = `Bearer ${process.env.PINATA_JWT}`;
+        } else {
+          headers['pinata_api_key'] = process.env.PINATA_API_KEY;
+          headers['pinata_secret_api_key'] = process.env.PINATA_SECRET_KEY;
+        }
+
         const response = await axios.post(
           'https://api.pinata.cloud/pinning/pinFileToIPFS',
           formData,
           {
-            headers: {
-              'pinata_api_key': process.env.PINATA_API_KEY,
-              'pinata_secret_api_key': process.env.PINATA_SECRET_KEY,
-              ...formHeaders
-            },
+            headers,
             timeout: 60000 // 60 second timeout
           }
         );
@@ -750,11 +763,10 @@ router.post('/generate', async (req, res) => {
         useFallbackStorage = true;
       }
     } else {
-      // If Pinata keys aren't set or we're forcing local storage
+      // If Pinata creds aren't set / disabled / forced local
       useFallbackStorage = true;
       console.log('📝 Using local storage for PDF', 
-        forceLocalStorage ? '(forced)' : 
-        (!process.env.PINATA_API_KEY ? '(no API key)' : '(as configured)'));
+        forceLocalStorage ? '(forced)' : pinataDisabled ? '(PINATA_DISABLED=true)' : (!haveJWT && !haveKeyPair ? '(no credentials)' : '(as configured)'));
     }
     
     // Use local storage if needed

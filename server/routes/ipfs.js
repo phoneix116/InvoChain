@@ -62,18 +62,29 @@ async function uploadToPinata(fileBuffer, metadata) {
       Object.assign(formHeaders, formData.getHeaders());
     }
     
-    console.log('🔑 Using Pinata with API Key:', process.env.PINATA_API_KEY.substring(0, 5) + '...');
+    const haveJWT = !!process.env.PINATA_JWT;
+    const haveKeyPair = !!process.env.PINATA_API_KEY && !!process.env.PINATA_SECRET_KEY;
     
+    if (haveJWT) {
+      console.log('🔑 Using Pinata JWT (Authorization header)');
+    } else {
+      console.log('🔑 Using Pinata API Key:', String(process.env.PINATA_API_KEY || '').substring(0, 5) + '...');
+    }
+
+    const headers = { ...formHeaders };
+    if (haveJWT) {
+      headers['Authorization'] = `Bearer ${process.env.PINATA_JWT}`;
+    } else if (haveKeyPair) {
+      headers['pinata_api_key'] = process.env.PINATA_API_KEY;
+      headers['pinata_secret_api_key'] = process.env.PINATA_SECRET_KEY;
+    }
+
     const response = await axios.post(
       'https://api.pinata.cloud/pinning/pinFileToIPFS',
       formData,
       {
         maxBodyLength: 'Infinity',
-        headers: {
-          'pinata_api_key': process.env.PINATA_API_KEY,
-          'pinata_secret_api_key': process.env.PINATA_SECRET_KEY,
-          ...formHeaders
-        },
+        headers,
         timeout: 60000 // 60 second timeout
       }
     );
@@ -168,6 +179,34 @@ async function uploadToMockIPFS(fileBuffer, metadata) {
   }
 }
 
+// Lightweight connectivity/auth check for Pinata
+router.get('/ping', async (req, res) => {
+  try {
+    const pinataDisabled = (process.env.PINATA_DISABLED || '').toLowerCase() === 'true' || process.env.PINATA_DISABLED === '1';
+    const haveJWT = !!process.env.PINATA_JWT;
+    const haveKeyPair = !!process.env.PINATA_API_KEY && !!process.env.PINATA_SECRET_KEY;
+
+    if (pinataDisabled) {
+      return res.json({ ok: true, pinata: 'disabled' });
+    }
+
+    if (!haveJWT && !haveKeyPair) {
+      return res.status(200).json({ ok: true, pinata: 'not-configured' });
+    }
+
+    const headers = haveJWT
+      ? { Authorization: `Bearer ${process.env.PINATA_JWT}` }
+      : { pinata_api_key: process.env.PINATA_API_KEY, pinata_secret_api_key: process.env.PINATA_SECRET_KEY };
+
+    const resp = await axios.get('https://api.pinata.cloud/data/userPinnedDataTotal', { headers, timeout: 15000 });
+    return res.json({ ok: true, pinata: 'reachable', data: resp.data });
+  } catch (err) {
+    const status = err.response?.status;
+    const data = err.response?.data;
+    return res.status(200).json({ ok: false, pinata: 'error', status, data: typeof data === 'string' ? data : data || err.message });
+  }
+});
+
 // Upload PDF to IPFS
 router.post('/upload', upload.single('file'), async (req, res) => {
   try {
@@ -215,9 +254,12 @@ router.post('/upload', upload.single('file'), async (req, res) => {
 // Try Pinata first, then Web3.Storage, finally mock IPFS for development
     let result;
     const forceLocalStorage = false; // Set to true to bypass Pinata completely for testing
+    const pinataDisabled = (process.env.PINATA_DISABLED || '').toLowerCase() === 'true' || process.env.PINATA_DISABLED === '1';
+    const haveJWT = !!process.env.PINATA_JWT;
+    const haveKeyPair = !!process.env.PINATA_API_KEY && !!process.env.PINATA_SECRET_KEY;
     
     try {
-      if (!forceLocalStorage && process.env.PINATA_API_KEY && process.env.PINATA_SECRET_KEY) {
+      if (!forceLocalStorage && !pinataDisabled && (haveJWT || haveKeyPair)) {
         console.log('🔄 Uploading to Pinata IPFS...');
         result = await uploadToPinata(req.file.buffer, metadata);
       } else if (!forceLocalStorage && process.env.WEB3_STORAGE_TOKEN) {
@@ -283,15 +325,18 @@ router.get('/file/:hash', async (req, res) => {
 
     // Try to get metadata from Pinata
     let metadata = null;
-    if (process.env.PINATA_API_KEY) {
+    const pinataDisabled = (process.env.PINATA_DISABLED || '').toLowerCase() === 'true' || process.env.PINATA_DISABLED === '1';
+    const haveJWT = !!process.env.PINATA_JWT;
+    const haveKeyPair = !!process.env.PINATA_API_KEY && !!process.env.PINATA_SECRET_KEY;
+    if (!pinataDisabled && (haveJWT || haveKeyPair)) {
       try {
+        const headers = haveJWT
+          ? { Authorization: `Bearer ${process.env.PINATA_JWT}` }
+          : { 'pinata_api_key': process.env.PINATA_API_KEY, 'pinata_secret_api_key': process.env.PINATA_SECRET_KEY };
         const response = await axios.get(
           `https://api.pinata.cloud/data/pinList?hashContains=${hash}`,
           {
-            headers: {
-              'pinata_api_key': process.env.PINATA_API_KEY,
-              'pinata_secret_api_key': process.env.PINATA_SECRET_KEY,
-            },
+            headers,
           }
         );
 
@@ -338,7 +383,13 @@ router.post('/pin/:hash', async (req, res) => {
       });
     }
 
-    if (!process.env.PINATA_API_KEY) {
+    const pinataDisabled = (process.env.PINATA_DISABLED || '').toLowerCase() === 'true' || process.env.PINATA_DISABLED === '1';
+    const haveJWT = !!process.env.PINATA_JWT;
+    const haveKeyPair = !!process.env.PINATA_API_KEY && !!process.env.PINATA_SECRET_KEY;
+    if (pinataDisabled) {
+      return res.status(501).json({ error: 'Service disabled', message: 'Pinning service disabled by configuration' });
+    }
+    if (!haveJWT && !haveKeyPair) {
       return res.status(501).json({
         error: 'Service not available',
         message: 'Pinning service not configured'
@@ -358,10 +409,9 @@ router.post('/pin/:hash', async (req, res) => {
         }
       },
       {
-        headers: {
-          'pinata_api_key': process.env.PINATA_API_KEY,
-          'pinata_secret_api_key': process.env.PINATA_SECRET_KEY,
-        },
+        headers: haveJWT
+          ? { Authorization: `Bearer ${process.env.PINATA_JWT}` }
+          : { 'pinata_api_key': process.env.PINATA_API_KEY, 'pinata_secret_api_key': process.env.PINATA_SECRET_KEY },
       }
     );
 
@@ -383,7 +433,13 @@ router.post('/pin/:hash', async (req, res) => {
 // List pinned files
 router.get('/pins', async (req, res) => {
   try {
-    if (!process.env.PINATA_API_KEY) {
+    const pinataDisabled = (process.env.PINATA_DISABLED || '').toLowerCase() === 'true' || process.env.PINATA_DISABLED === '1';
+    const haveJWT = !!process.env.PINATA_JWT;
+    const haveKeyPair = !!process.env.PINATA_API_KEY && !!process.env.PINATA_SECRET_KEY;
+    if (pinataDisabled) {
+      return res.status(501).json({ error: 'Service disabled', message: 'Pinning service disabled by configuration' });
+    }
+    if (!haveJWT && !haveKeyPair) {
       return res.status(501).json({
         error: 'Service not available',
         message: 'Pinning service not configured'
@@ -392,13 +448,14 @@ router.get('/pins', async (req, res) => {
 
     const { page = 1, limit = 10 } = req.query;
     
+    const headers = haveJWT
+      ? { Authorization: `Bearer ${process.env.PINATA_JWT}` }
+      : { 'pinata_api_key': process.env.PINATA_API_KEY, 'pinata_secret_api_key': process.env.PINATA_SECRET_KEY };
+
     const response = await axios.get(
       `https://api.pinata.cloud/data/pinList?status=pinned&pageLimit=${limit}&pageOffset=${(page - 1) * limit}`,
       {
-        headers: {
-          'pinata_api_key': process.env.PINATA_API_KEY,
-          'pinata_secret_api_key': process.env.PINATA_SECRET_KEY,
-        },
+        headers,
       }
     );
 
