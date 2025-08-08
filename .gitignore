@@ -152,14 +152,72 @@ client/.eslintcache
 client/build/static/js/*.map
 client/build/static/css/*.map
 
-# Test files and generated test artifacts
-test-pinata.txt
-test-complete-workflow.js
-test-invoice.pdf
-test-preview.pdf
-test-ipfs-upload.js
-test-pinata.js
-test-pdf-preview.js
-test-workflow.pdf
+# Setup and documentation files
+/setup.bat
+/setup.ps1
+
+# Example files
+.env.example
+
+# Uploaded content
+/server/uploads/
+
+# Development scripts
+/get-private-keys.js
+/server/check-latest-invoice.js
+/server/fix-invoice-pdf.js
+
+# Test and Utility Scripts
+/start-backend.bat
+/start-frontend.bat
+/start-hardhat.bat
+/start-server.bat
+/test-complete-workflow.js
+/test-invoice-api.js
+/test-invoice.js
+/test-invoice.pdf
+/test-ipfs-upload.js
+/test-pdf-and-ipfs.js
+/test-pdf-preview.js
+/test-pdf.js
+/test-pinata-access.js
+/test-pinata-api.js
+/test-pinata.js
+/test-pinata.txt
+/test-preview.pdf
+/test-recipients.json
+/test-routes.js
+/test-workflow.js
+/test-workflow.pdf
+/metamask-reset.html
+/quick-test.js
+/reset-circuit-breaker.js
+/reset-test.html
+/run-all.bat
+/run-all.ps1
+/check-api-functions.js
+/check-latest-invoice.js
+/circuit-breaker-test.js
+/clear-frontend-state.html
+/debug-amounts.js
+/direct-api-test.js
+/fix-existing-invoices.js
+/get-accounts.js
+/send-eth.js
+
+# Server test files
 server/test-pinata.js
 server/test-simple-upload.js
+server/check-indexes.js
+server/quick-index-check.js
+server/test-architecture-simple.js
+server/test-blockchain-architecture.js
+server/test-static-architecture.js
+
+# Client development files
+client/src/services/blockchainInvoiceAPI.js
+
+# Unused server routes/services
+server/routes/blockchainInvoices.js
+server/routes/users.js
+server/services/blockchainService.js
