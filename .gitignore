@@ -151,3 +151,15 @@ client/.eslintcache
 # Webpack bundles analysis
 client/build/static/js/*.map
 client/build/static/css/*.map
+
+# Test files and generated test artifacts
+test-pinata.txt
+test-complete-workflow.js
+test-invoice.pdf
+test-preview.pdf
+test-ipfs-upload.js
+test-pinata.js
+test-pdf-preview.js
+test-workflow.pdf
+server/test-pinata.js
+server/test-simple-upload.js
