@@ -351,9 +351,42 @@ export const InvoiceProvider = ({ children }) => {
   // Get invoice details
   const getInvoiceDetails = async (invoiceId) => {
     try {
-      const response = await contractAPI.getInvoice(invoiceId);
-      if (response.success) {
-        return response.invoice;
+      // Treat purely numeric positive strings as on-chain IDs
+      const isNumericId = typeof invoiceId === 'string' && /^\d+$/.test(invoiceId);
+
+      if (isNumericId) {
+        const response = await contractAPI.getInvoice(invoiceId);
+        if (response.success) return response.invoice;
+        throw new Error('Failed to get invoice details');
+      }
+
+      // Fallback to Mongo metadata by invoiceId (e.g., INV-...)
+      const meta = await invoiceAPI.getInvoiceMetadata(invoiceId);
+      if (meta.success && meta.invoice) {
+        const inv = meta.invoice;
+        // Normalize to the shape InvoiceDetails expects
+        return {
+          id: inv.blockchain?.invoiceId || invoiceId,
+          ipfsHash: inv.ipfs?.hash || inv.ipfsHash,
+          issuer: inv.issuer?.walletAddress || inv.issuer,
+          recipient: inv.recipient?.walletAddress || inv.recipient,
+          amount: inv.amount, // Already ETH number from Mongo
+          tokenAddress: inv.tokenAddress || null,
+          // Map string statuses to numeric-like for UI compatibility (created/pending -> 0 etc.)
+          status: (() => {
+            const s = (inv.status || '').toLowerCase();
+            if (s === 'paid') return 1;
+            if (s === 'disputed') return 2;
+            if (s === 'resolved') return 3;
+            if (s === 'cancelled') return 4;
+            // draft/pending/overdue -> treat as Created for actions visibility
+            return 0;
+          })(),
+          createdAt: inv.createdAt,
+          dueDate: inv.dueDate,
+          paidAt: inv.paidDate || null,
+          description: inv.description || inv.title || ''
+        };
       }
       throw new Error('Failed to get invoice details');
     } catch (error) {
@@ -378,25 +411,35 @@ export const InvoiceProvider = ({ children }) => {
 
   // Format invoice status
   const formatInvoiceStatus = (status) => {
-    const statusMap = {
-      0: 'Created',
-      1: 'Paid',
-      2: 'Disputed',
-      3: 'Resolved',
-      4: 'Cancelled'
-    };
+    // Accept both numeric (on-chain) and string (Mongo) statuses
+    if (typeof status === 'string') {
+      const s = status.toLowerCase();
+      if (s === 'paid') return 'Paid';
+      if (s === 'disputed') return 'Disputed';
+      if (s === 'resolved') return 'Resolved';
+      if (s === 'cancelled') return 'Cancelled';
+      if (s === 'overdue') return 'Overdue';
+      if (s === 'pending' || s === 'draft') return 'Created';
+      return 'Unknown';
+    }
+
+    const statusMap = { 0: 'Created', 1: 'Paid', 2: 'Disputed', 3: 'Resolved', 4: 'Cancelled' };
     return statusMap[status] || 'Unknown';
   };
 
   // Get status color
   const getStatusColor = (status) => {
-    const colorMap = {
-      0: 'warning',    // Created
-      1: 'success',    // Paid
-      2: 'error',      // Disputed
-      3: 'info',       // Resolved
-      4: 'default'     // Cancelled
-    };
+    if (typeof status === 'string') {
+      const s = status.toLowerCase();
+      if (s === 'paid') return 'success';
+      if (s === 'disputed') return 'error';
+      if (s === 'resolved') return 'info';
+      if (s === 'cancelled') return 'default';
+      if (s === 'overdue') return 'error';
+      if (s === 'pending' || s === 'draft') return 'warning';
+      return 'default';
+    }
+    const colorMap = { 0: 'warning', 1: 'success', 2: 'error', 3: 'info', 4: 'default' };
     return colorMap[status] || 'default';
   };
 

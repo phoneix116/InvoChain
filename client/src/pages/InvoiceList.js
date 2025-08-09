@@ -501,7 +501,7 @@ const InvoiceList = () => {
                         <Tooltip title="View Details">
                           <IconButton
                             size="small"
-                            onClick={() => handleViewInvoice(invoice.id)}
+                            onClick={() => handleViewInvoice(invoice.id || invoice.invoiceId)}
                             sx={{ 
                               color: '#94a3b8',
                               '&:hover': { 

@@ -296,7 +296,12 @@ const InvoiceDetails = () => {
                       Amount
                     </Typography>
                     <Typography variant="h5" sx={{ color: '#22c55e', fontWeight: 700 }}>
-                      {(parseFloat(invoice.amount) / 1e18).toFixed(4)} ETH
+                      {(() => {
+                        const val = typeof invoice.amount === 'object' ? parseFloat(invoice.amount.toString()) : parseFloat(invoice.amount);
+                        const isWeiLike = !isNaN(val) && val > 1e12;
+                        const eth = isWeiLike ? (val / 1e18) : val;
+                        return `${(eth || 0).toFixed(4)} ETH`;
+                      })()}
                     </Typography>
                   </Box>
                 </Grid>
@@ -428,7 +433,7 @@ const InvoiceDetails = () => {
                 >
                   {invoice?.ipfsHash ? 'Download PDF' : 'PDF Not Available'}
                 </Button>
-                {invoice.status === 0 && (
+                {invoice.status === 0 && /^\d+$/.test(String(id)) && (
                   <Button
                     variant="contained"
                     startIcon={<Payment />}

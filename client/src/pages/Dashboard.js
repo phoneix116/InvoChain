@@ -77,7 +77,13 @@ const Dashboard = () => {
             break;
         }
         
-        acc.totalAmount += parseFloat(invoice.amount) / 1e18; // Convert from wei
+        try {
+          const val = typeof invoice.amount === 'object' ? parseFloat(invoice.amount.toString()) : parseFloat(invoice.amount);
+          const isWeiLike = !isNaN(val) && val > 1e12; // heuristic
+          acc.totalAmount += isWeiLike ? (val / 1e18) : (val || 0);
+        } catch {
+          // ignore parse errors
+        }
         return acc;
       }, {
         total: 0,
@@ -619,11 +625,11 @@ const Dashboard = () => {
                 </Alert>
               ) : (
                 <List sx={{ bgcolor: 'transparent' }}>
-                  {userInvoices.slice(0, 5).map((invoice) => (
+          {userInvoices.slice(0, 5).map((invoice) => (
                     <ListItem
-                      key={invoice.id}
+            key={invoice.id || invoice.invoiceId || invoice._id}
                       button
-                      onClick={() => navigate(`/invoice/${invoice.id}`)}
+            onClick={() => navigate(`/invoice/${invoice.id || invoice.invoiceId}`)}
                       divider
                       sx={{
                         borderColor: 'rgba(148, 163, 184, 0.2)',
@@ -640,7 +646,7 @@ const Dashboard = () => {
                         primary={
                           <Box display="flex" justifyContent="space-between" alignItems="center">
                             <Typography variant="subtitle1" sx={{ color: '#f8fafc', fontWeight: 600 }}>
-                              Invoice #{invoice.id}
+                              Invoice #{invoice.id || invoice.invoiceId}
                             </Typography>
                             <Chip
                               label={formatInvoiceStatus(invoice.status)}
@@ -652,7 +658,16 @@ const Dashboard = () => {
                         secondary={
                           <Box>
                             <Typography variant="body2" sx={{ color: '#94a3b8' }}>
-                              Amount: <span style={{ color: '#22c55e', fontWeight: 600 }}>{(parseFloat(invoice.amount) / 1e18).toFixed(4)} ETH</span>
+                              {(() => {
+                                const val = typeof invoice.amount === 'object' ? parseFloat(invoice.amount.toString()) : parseFloat(invoice.amount);
+                                const isWeiLike = !isNaN(val) && val > 1e12; // heuristic
+                                const eth = isWeiLike ? (val / 1e18) : val;
+                                return (
+                                  <span>
+                                    Amount: <span style={{ color: '#22c55e', fontWeight: 600 }}>{(eth || 0).toFixed(4)} ETH</span>
+                                  </span>
+                                );
+                              })()}
                             </Typography>
                             <Typography variant="body2" sx={{ color: '#94a3b8' }}>
                               Due: {new Date(invoice.dueDate).toLocaleDateString()}
