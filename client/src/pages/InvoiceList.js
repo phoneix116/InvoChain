@@ -54,16 +54,34 @@ const InvoiceList = () => {
 
     // Apply search filter
     if (searchTerm) {
-      filtered = filtered.filter(invoice => 
-        invoice.id.includes(searchTerm) ||
-        invoice.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (invoice.recipient?.walletAddress || invoice.recipient || '').toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      const term = String(searchTerm).toLowerCase();
+      filtered = filtered.filter(invoice => {
+        const idStr = String(invoice.id ?? invoice.invoiceId ?? '').toLowerCase();
+        const descStr = String(invoice.description ?? invoice.title ?? '').toLowerCase();
+        const recipientStr = String(invoice.recipient?.walletAddress ?? invoice.recipient ?? '').toLowerCase();
+        return (
+          (idStr && idStr.includes(term)) ||
+          (descStr && descStr.includes(term)) ||
+          (recipientStr && recipientStr.includes(term))
+        );
+      });
     }
 
     // Apply status filter
     if (statusFilter !== 'all') {
-      filtered = filtered.filter(invoice => invoice.status === parseInt(statusFilter));
+      filtered = filtered.filter(invoice => {
+        const invStatus = typeof invoice.status === 'string' 
+          ? invoice.status.toLowerCase() 
+          : invoice.status;
+        const filterNum = parseInt(statusFilter);
+        if (!isNaN(filterNum) && typeof invStatus === 'number') {
+          return invStatus === filterNum;
+        }
+        if (typeof invStatus === 'string') {
+          return invStatus === String(statusFilter).toLowerCase();
+        }
+        return false;
+      });
     }
 
     // Apply sorting
