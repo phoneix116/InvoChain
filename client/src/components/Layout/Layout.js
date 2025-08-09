@@ -32,6 +32,8 @@ import {
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useWallet } from '../../contexts/WalletContext';
+import { useInvoice } from '../../contexts/InvoiceContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-toastify';
 
 const drawerWidth = 240;
@@ -57,6 +59,8 @@ const Layout = ({ children }) => {
     formatAddress,
     isConnecting,
   } = useWallet();
+  const { user, signInWithGoogle, logout: logoutAuth, loading: authLoading } = useAuth();
+  const { userInfo, verifyWalletOwnership } = useInvoice();
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
@@ -291,6 +295,22 @@ const Layout = ({ children }) => {
                 </Avatar>
                 {formatAddress(account)}
               </Button>
+              {userInfo?.verifiedWallet ? (
+                <Chip
+                  label="Verified"
+                  size="small"
+                  sx={{ ml: 1, bgcolor: 'rgba(34,197,94,0.15)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.3)' }}
+                />
+              ) : (
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={verifyWalletOwnership}
+                  sx={{ ml: 1, borderColor: 'rgba(59,130,246,0.5)', color: '#f8fafc' }}
+                >
+                  Verify Wallet
+                </Button>
+              )}
 
               <Menu
                 anchorEl={anchorEl}
@@ -361,6 +381,24 @@ const Layout = ({ children }) => {
               }}
             >
               {isConnecting ? 'Connecting...' : 'Connect Wallet'}
+            </Button>
+          )}
+
+          {/* Auth */}
+          {user ? (
+            <>
+              <Button
+                onClick={() => navigate('/profile')}
+                sx={{ ml: 2, color: '#f8fafc', textTransform: 'none', fontWeight: 700 }}
+                title="Open Profile"
+              >
+                {user.displayName || user.email?.split('@')[0] || 'Profile'}
+              </Button>
+              <Button onClick={logoutAuth} sx={{ ml: 1 }} color="inherit" variant="outlined">Logout</Button>
+            </>
+          ) : (
+            <Button onClick={signInWithGoogle} sx={{ ml: 2 }} color="inherit" variant="outlined" disabled={authLoading}>
+              {authLoading ? 'Auth…' : 'Login'}
             </Button>
           )}
         </Toolbar>

@@ -76,7 +76,67 @@ app.use((req, res, next) => {
 // API Routes
 app.use('/api/ipfs', ipfsRoutes);
 app.use('/api/contract', contractRoutes);
-app.use('/api/invoice', invoiceRoutes);
+// Optional Firebase auth (enabled via env FIREBASE_ADMIN_ENABLED=true)
+let verifyFirebaseToken = (req, res, next) => next();
+try {
+  if (process.env.FIREBASE_ADMIN_ENABLED === 'true') {
+    const admin = require('firebase-admin');
+    const fs = require('fs');
+
+    // Resolve credentials from env
+    let credentials;
+    if (process.env.FIREBASE_ADMIN_CREDENTIALS_JSON) {
+      credentials = JSON.parse(process.env.FIREBASE_ADMIN_CREDENTIALS_JSON);
+    } else if (process.env.FIREBASE_CREDENTIALS_FILE) {
+      const raw = fs.readFileSync(process.env.FIREBASE_CREDENTIALS_FILE, 'utf8');
+      credentials = JSON.parse(raw);
+    } else {
+      credentials = {
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: (process.env.FIREBASE_PRIVATE_KEY || '').replace(/\\n/g, '\n')
+      };
+    }
+
+    if (!admin.apps.length) {
+      admin.initializeApp({
+        credential: admin.credential.cert(credentials)
+      });
+    }
+
+    verifyFirebaseToken = async (req, res, next) => {
+      const authHeader = req.headers.authorization || '';
+      const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+      if (!token) return res.status(401).json({ error: 'Unauthorized' });
+      try {
+        const decoded = await admin.auth().verifyIdToken(token);
+        req.user = decoded;
+        next();
+      } catch (e) {
+        return res.status(401).json({ error: 'Invalid token' });
+      }
+    };
+  }
+} catch (e) {
+  console.warn('Firebase admin not configured, skipping auth middleware');
+}
+
+app.use('/api/invoice', verifyFirebaseToken, invoiceRoutes);
+
+// Auth debug endpoint (returns Firebase user claims when enabled)
+app.get('/api/auth/me', verifyFirebaseToken, (req, res) => {
+  const u = req.user || {};
+  res.json({
+    uid: u.uid,
+    email: u.email,
+    email_verified: u.email_verified,
+    auth_time: u.auth_time,
+    iss: u.iss,
+    aud: u.aud,
+    iat: u.iat,
+    exp: u.exp
+  });
+});
 
 // Health check endpoint with database status
 app.get('/health', async (req, res) => {
@@ -144,27 +204,46 @@ app.use((req, res) => {
 const PORT = process.env.PORT || 3001;
 
 async function startServer() {
+  // Try to connect to MongoDB, but do not crash the server on failure (dev-friendly)
   try {
-    // Connect to MongoDB first
     console.log('🔄 Connecting to MongoDB Atlas...');
     await database.connect();
-    
-    // Start Express server
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`📖 API Documentation: http://localhost:${PORT}`);
-      console.log(`🏥 Health Check: http://localhost:${PORT}/health`);
-      console.log(`📊 Database: Connected to MongoDB Atlas`);
-    });
-    
   } catch (error) {
-    console.error('❌ Failed to start server:', error.message);
-    
+    console.error('❌ MongoDB initial connection failed:', error.message);
     if (error.message.includes('MONGODB_URI')) {
       console.error('💡 Please update your .env file with your MongoDB connection string');
+    } else if (error.message.toLowerCase().includes('etimeout')) {
+      console.error('💡 DNS / Network issue reaching MongoDB Atlas. Ensure your IP is whitelisted in Atlas Network Access or allow 0.0.0.0/0 for dev.');
     }
-    
-    process.exit(1);
+  }
+
+  // Start Express server regardless, so other routes remain usable
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`📖 API Documentation: http://localhost:${PORT}`);
+    console.log(`🏥 Health Check: http://localhost:${PORT}/health`);
+    console.log(`📊 Database: ${database.isConnected ? 'Connected to MongoDB Atlas' : 'Not connected (retrying...)'}`);
+  });
+
+  // Background retry loop to establish DB connection later
+  if (!database.isConnected) {
+    const RETRY_MS = 10000; // 10s
+    const retry = setInterval(async () => {
+      if (database.isConnected) {
+        clearInterval(retry);
+        return;
+      }
+      try {
+        console.log(`⏳ Retrying MongoDB connection...`);
+        await database.connect();
+        if (database.isConnected) {
+          console.log('✅ MongoDB connected after retry');
+          clearInterval(retry);
+        }
+      } catch (e) {
+        console.warn('⚠️ MongoDB retry failed:', e.message);
+      }
+    }, RETRY_MS);
   }
 }
 

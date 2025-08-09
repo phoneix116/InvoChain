@@ -1,4 +1,6 @@
 import axios from 'axios';
+import getFirebaseAuth from './firebase';
+import { getIdToken } from 'firebase/auth';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3002';
 
@@ -8,6 +10,20 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+});
+
+// Request interceptor to attach Firebase ID token when available
+api.interceptors.request.use(async (config) => {
+  try {
+    const auth = getFirebaseAuth();
+    const user = auth && auth.currentUser;
+    if (user) {
+      const token = await getIdToken(user, true);
+      config.headers = config.headers || {};
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  } catch {}
+  return config;
 });
 
 // Response interceptor
@@ -52,6 +68,16 @@ const invoiceAPI = {
   // User Management
   createOrGetUser: (userData) => 
     api.post('/users/profile', userData),
+
+  getUserProfile: (walletAddress) =>
+    api.get(`/users/${walletAddress}`),
+
+  // Wallet verification
+  requestWalletNonce: (walletAddress) =>
+    api.post(`/users/${walletAddress}/verify/nonce`),
+
+  verifyWalletSignature: (walletAddress, signature) =>
+    api.post(`/users/${walletAddress}/verify`, { signature }),
 
   updateUserPreferences: (walletAddress, preferences) =>
     api.put(`/users/${walletAddress}/preferences`, { preferences }),

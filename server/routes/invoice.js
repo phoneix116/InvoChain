@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const FormData = require('form-data');
 const axios = require('axios');
+const { verifyMessage } = require('ethers');
 
 // Import MongoDB models
 const User = require('../models/User');
@@ -45,9 +46,9 @@ const templateSchema = Joi.object({
 
 const userSchema = Joi.object({
   walletAddress: Joi.string().required(),
-  email: Joi.string().email().optional(),
-  name: Joi.string().max(100).optional(),
-  company: Joi.string().max(100).optional(),
+  email: Joi.string().email().optional().allow('').allow(null),
+  name: Joi.string().max(100).optional().allow(''),
+  company: Joi.string().max(100).optional().allow(''),
   preferences: Joi.object({
     theme: Joi.string().valid('light', 'dark').default('dark'),
     notifications: Joi.boolean().default(true),
@@ -69,8 +70,32 @@ async function getOrCreateUser(walletAddress, userData = {}) {
       await user.save();
       console.log(`✅ Created new user: ${walletAddress}`);
     } else {
-      // Update last active
-      await user.updateLastActive();
+      // Update profile fields if provided (e.g., after Firebase login)
+      let mutated = false;
+      if (userData.name && user.name !== userData.name) {
+        user.name = userData.name;
+        mutated = true;
+      }
+      if (userData.email && user.email !== userData.email) {
+        user.email = userData.email.toLowerCase();
+        mutated = true;
+      }
+      if (userData.company && user.company !== userData.company) {
+        user.company = userData.company;
+        mutated = true;
+      }
+      // Update preferences if provided
+      if (userData.preferences && typeof userData.preferences === 'object') {
+        user.preferences = { ...user.preferences, ...userData.preferences };
+        mutated = true;
+      }
+      // Update last active and save changes
+      if (mutated) {
+        user.lastActive = new Date();
+        await user.save();
+      } else {
+        await user.updateLastActive();
+      }
     }
     
     return user;
@@ -932,6 +957,69 @@ router.post('/users/profile', async (req, res) => {
       error: 'Failed to get user profile',
       message: error.message
     });
+  }
+});
+ 
+ // Get a user's full profile by wallet address
+ router.get('/users/:walletAddress', async (req, res) => {
+   try {
+     const { walletAddress } = req.params;
+     if (!walletAddress) return res.status(400).json({ error: 'Missing wallet address' });
+     const user = await User.findByWallet(walletAddress);
+     if (!user) return res.status(404).json({ error: 'User not found' });
+     res.json({ success: true, user });
+   } catch (error) {
+     console.error('Get user profile error:', error);
+     res.status(500).json({ error: 'Failed to get user profile', message: error.message });
+   }
+ });
+
+// Issue a nonce for wallet verification (requires Firebase auth when enabled)
+router.post('/users/:walletAddress/verify/nonce', async (req, res) => {
+  try {
+    const { walletAddress } = req.params;
+    if (!walletAddress) return res.status(400).json({ error: 'Missing wallet address' });
+
+    const user = await getOrCreateUser(walletAddress);
+    const nonce = crypto.randomBytes(16).toString('hex');
+    user.walletVerification.nonce = nonce;
+    await user.save();
+
+    res.json({ success: true, nonce });
+  } catch (error) {
+    console.error('Issue nonce error:', error);
+    res.status(500).json({ error: 'Failed to issue nonce', message: error.message });
+  }
+});
+
+// Verify a signed nonce to link wallet ownership
+router.post('/users/:walletAddress/verify', async (req, res) => {
+  try {
+    const { walletAddress } = req.params;
+    const { signature } = req.body;
+    if (!walletAddress || !signature) return res.status(400).json({ error: 'Missing parameters' });
+
+    const user = await User.findByWallet(walletAddress);
+    if (!user || !user.walletVerification.nonce) {
+      return res.status(400).json({ error: 'No nonce issued' });
+    }
+
+  const message = `Verify ownership of ${walletAddress}\nNonce: ${user.walletVerification.nonce}`;
+  // Recover signer (ethers v6)
+  const recovered = verifyMessage(message, signature);
+    if (recovered.toLowerCase() !== walletAddress.toLowerCase()) {
+      return res.status(400).json({ error: 'Signature does not match wallet' });
+    }
+
+    user.verifiedWallet = true;
+    user.walletVerification.lastVerifiedAt = new Date();
+    user.walletVerification.nonce = null; // one-time use
+    await user.save();
+
+    res.json({ success: true, verifiedWallet: true, lastVerifiedAt: user.walletVerification.lastVerifiedAt });
+  } catch (error) {
+    console.error('Verify wallet error:', error);
+    res.status(500).json({ error: 'Failed to verify wallet', message: error.message });
   }
 });
 

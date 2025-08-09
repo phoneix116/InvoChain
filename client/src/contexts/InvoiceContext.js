@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { ethers } from 'ethers';
 import { toast } from 'react-toastify';
 import { useWallet } from './WalletContext';
+import { useAuth } from './AuthContext';
 import contractAPI from '../services/contractAPI';
 import invoiceAPI from '../services/invoiceAPI';
 
@@ -17,11 +18,13 @@ export const useInvoice = () => {
 
 export const InvoiceProvider = ({ children }) => {
   const { signer, account } = useWallet();
+  const { user: authUser } = useAuth();
   const [userInvoices, setUserInvoices] = useState([]);
   const [userInfo, setUserInfo] = useState(null);
   const [loading, setLoading] = useState(false);
   const [contract, setContract] = useState(null);
   const [lastLoadTime, setLastLoadTime] = useState(0);
+  const [autoVerifyAttempted, setAutoVerifyAttempted] = useState(false);
 
   // Rate limiting: prevent API calls more frequent than once per 5 seconds
   const MIN_LOAD_INTERVAL = 5000;
@@ -64,7 +67,12 @@ export const InvoiceProvider = ({ children }) => {
     try {
       // Load user info and invoices from MongoDB
       const [userResponse, invoicesResponse] = await Promise.all([
-        invoiceAPI.createOrGetUser({ walletAddress: account }),
+        invoiceAPI.createOrGetUser({ 
+          walletAddress: account,
+          // Include Firebase profile details when available
+          name: authUser?.displayName,
+          email: authUser?.email,
+        }),
         invoiceAPI.getUserInvoices(account)
       ]);
 
@@ -94,6 +102,46 @@ export const InvoiceProvider = ({ children }) => {
       setLoading(false);
     }
   }, [account, lastLoadTime]);
+
+  // Verify wallet ownership by signing a nonce from the server
+  const verifyWalletOwnership = useCallback(async () => {
+    if (!account || !signer) {
+      toast.error('Connect your wallet first');
+      return false;
+    }
+    try {
+      const { nonce } = await invoiceAPI.requestWalletNonce(account);
+      if (!nonce) throw new Error('No nonce received');
+      const message = `Verify ownership of ${account}\nNonce: ${nonce}`;
+      const signature = await signer.signMessage(message);
+      const resp = await invoiceAPI.verifyWalletSignature(account, signature);
+      if (resp?.success) {
+        // Refresh user profile
+        const refreshed = await invoiceAPI.createOrGetUser({ walletAddress: account });
+        if (refreshed.user) setUserInfo(refreshed.user);
+        return true;
+      }
+      throw new Error(resp?.error || 'Verification failed');
+    } catch (e) {
+      console.error('Wallet verification failed:', e);
+      toast.error(e.message || 'Wallet verification failed');
+      return false;
+    }
+  }, [account, signer]);
+
+  // Auto-verify: after Firebase login and when wallet is connected, attempt one-time verification if not verified
+  useEffect(() => {
+    if (authUser && account && signer && userInfo && !userInfo.verifiedWallet && !autoVerifyAttempted) {
+      setAutoVerifyAttempted(true);
+      // Attempt in background; toasts are handled inside
+      verifyWalletOwnership();
+    }
+  }, [authUser, account, signer, userInfo, autoVerifyAttempted, verifyWalletOwnership]);
+
+  // Reset the attempt flag on logout so we can try again next time
+  useEffect(() => {
+    if (!authUser) setAutoVerifyAttempted(false);
+  }, [authUser]);
 
   // Create invoice with MongoDB and blockchain
   const createInvoice = async (invoiceData) => {
@@ -129,17 +177,56 @@ export const InvoiceProvider = ({ children }) => {
         throw new Error('Failed to upload PDF to IPFS');
       }
 
-      // Convert due date to timestamp
+      // Normalize and validate fields for on-chain call
+      // Due date
       const dueTimestamp = Math.floor(new Date(invoiceData.dueDate).getTime() / 1000);
+      const nowSec = Math.floor(Date.now() / 1000);
+      if (!Number.isFinite(dueTimestamp) || dueTimestamp <= nowSec + 60) {
+        throw new Error('Due date must be in the future');
+      }
+
+      // Recipient address
+      let recipientAddress = null;
+      if (typeof invoiceData.recipient === 'string' && invoiceData.recipient.trim()) {
+        recipientAddress = invoiceData.recipient.trim();
+      } else if (invoiceData.recipient && typeof invoiceData.recipient === 'object' && invoiceData.recipient.walletAddress) {
+        recipientAddress = String(invoiceData.recipient.walletAddress).trim();
+      } else if (invoiceData.recipientAddress) {
+        recipientAddress = String(invoiceData.recipientAddress).trim();
+      }
+      if (!recipientAddress || !ethers.utils.isAddress(recipientAddress)) {
+        throw new Error('Invalid recipient address');
+      }
+      if (recipientAddress.toLowerCase() === account.toLowerCase()) {
+        throw new Error('Cannot invoice yourself');
+      }
+
+      // Amount
+      let amountWei;
+      try {
+        amountWei = ethers.utils.parseEther(String(invoiceData.amount));
+      } catch {
+        throw new Error('Invalid amount');
+      }
+
+      // Token address (default ETH)
+      let tokenAddr = invoiceData.tokenAddress;
+      if (tokenAddr && String(tokenAddr).trim()) {
+        if (!ethers.utils.isAddress(tokenAddr)) {
+          throw new Error('Invalid token address');
+        }
+      } else {
+        tokenAddr = ethers.constants.AddressZero;
+      }
 
       // Create invoice on blockchain
       const tx = await contract.createInvoice(
         ipfsHash,
-        invoiceData.recipient,
-        ethers.utils.parseEther(invoiceData.amount.toString()),
-        invoiceData.tokenAddress || ethers.constants.AddressZero,
+        recipientAddress,
+        amountWei,
+        tokenAddr,
         dueTimestamp,
-        invoiceData.description
+        invoiceData.description || ''
       );
 
       toast.info('Transaction submitted. Waiting for confirmation...');
@@ -173,9 +260,10 @@ export const InvoiceProvider = ({ children }) => {
         storage
       };
     } catch (error) {
+      const reason = error?.error?.message || error?.data?.message || error?.reason || error?.message || 'Transaction failed';
       console.error('Failed to create invoice:', error);
-      toast.error('Failed to create invoice: ' + error.message);
-      throw error;
+      toast.error('Failed to create invoice: ' + reason);
+      throw new Error(reason);
     } finally {
       setLoading(false);
     }
@@ -556,7 +644,8 @@ export const InvoiceProvider = ({ children }) => {
     getInvoiceTemplates,
     createInvoiceTemplate,
     formatInvoiceStatus,
-    getStatusColor,
+  getStatusColor,
+  verifyWalletOwnership,
   };
 
   return (

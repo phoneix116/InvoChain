@@ -66,6 +66,14 @@ const userSchema = new mongoose.Schema({
   isActive: {
     type: Boolean,
     default: true
+  },
+  verifiedWallet: {
+    type: Boolean,
+    default: false
+  },
+  walletVerification: {
+    nonce: { type: String, default: null },
+    lastVerifiedAt: { type: Date, default: null }
   }
 }, {
   timestamps: true, // Adds createdAt and updatedAt

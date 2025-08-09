@@ -8,6 +8,7 @@ import 'react-toastify/dist/ReactToastify.css';
 
 import App from './App';
 import { WalletProvider } from './contexts/WalletContext';
+import { AuthProvider } from './contexts/AuthContext';
 import { InvoiceProvider } from './contexts/InvoiceContext';
 
 const theme = createTheme({
@@ -61,10 +62,11 @@ root.render(
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <BrowserRouter>
-        <WalletProvider>
-          <InvoiceProvider>
-            <App />
-            <ToastContainer
+        <AuthProvider>
+          <WalletProvider>
+            <InvoiceProvider>
+              <App />
+              <ToastContainer
               position="top-right"
               autoClose={5000}
               hideProgressBar={false}
@@ -75,9 +77,10 @@ root.render(
               draggable
               pauseOnHover
               theme="light"
-            />
-          </InvoiceProvider>
-        </WalletProvider>
+              />
+            </InvoiceProvider>
+          </WalletProvider>
+        </AuthProvider>
       </BrowserRouter>
     </ThemeProvider>
   </React.StrictMode>
