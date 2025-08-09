@@ -1,5 +1,13 @@
 # 🧾 Blockchain Invoice System
 
+## 🚀 Latest Features (2025)
+
+- 👤 **User Profile Page** — View wallet, identity, preferences, and stats in a dedicated Profile page (click your name in the top bar after login)
+- 🔒 **Auto Wallet Verification** — Wallet is cryptographically verified after Firebase login (no manual click needed)
+- 🔑 **Firebase Login Integration** — Secure Google sign-in, profile sync, and protected routes
+- 📝 **Profile Editing** — Edit your name, email, company, and preferences in Settings
+
+
 A comprehensive decentralized invoicing platform built on Ethereum with automatic PDF generation and IPFS cloud storage integration.
 
 ## ✨ Features
@@ -12,6 +20,10 @@ A comprehensive decentralized invoicing platform built on Ethereum with automati
 - 📊 **Real-time Analytics** - Invoice tracking and payment status
 - 🔐 **Secure Web3 Integration** - MetaMask wallet connection
 - 📱 **Responsive Design** - Mobile-friendly interface
+
+- 👤 **User Profile** - Dedicated page for viewing wallet, identity, preferences, and stats
+- 🔑 **Firebase Auth** - Google login, protected routes, and profile sync
+- 🔒 **Wallet Verification** - Automatic cryptographic verification after login
 
 ## 🛠️ Tech Stack
 
@@ -129,6 +141,8 @@ cd server && node index.js
 
 # Terminal 3: Frontend client  
 cd client && npm start
+
+# After login, click your name in the top bar to open your Profile page.
 ```
 
 ## 🌐 Application URLs
@@ -170,6 +184,16 @@ REACT_APP_IPFS_GATEWAY=https://your-custom-gateway.mypinata.cloud/ipfs/
    - Click "Connect Wallet" button
    - Approve connection in MetaMask popup
    - Ensure you're on the correct network (localhost:8545 for development)
+
+2. **Login with Google (Firebase)**
+   - Click "Login" in the top bar
+   - Sign in with your Google account
+   - Your wallet will be automatically verified
+
+3. **View and Edit Profile**
+   - Click your name in the top bar to open Profile
+   - See wallet, identity, preferences, and stats
+   - Edit your info in Settings
 
 2. **Create New Invoice**
    - Navigate to "Create Invoice" page
@@ -250,6 +274,14 @@ GET    /api/ipfs/pins          # List pinned files
 ```
 
 ### Contract Interaction
+### User Profile & Auth
+```
+GET    /api/invoice/users/:walletAddress         # Get user profile
+POST   /api/invoice/users/profile                # Create or update user profile
+PUT    /api/invoice/users/:walletAddress/preferences # Update user preferences
+POST   /api/invoice/users/:walletAddress/verify/nonce # Issue wallet verification nonce
+POST   /api/invoice/users/:walletAddress/verify       # Verify wallet signature
+```
 ```
 GET    /api/contract/invoice/:id    # Get blockchain invoice
 POST   /api/contract/create        # Create blockchain invoice
