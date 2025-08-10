@@ -28,7 +28,8 @@
     "sharp": "^0.33.2",
     "openai": "^4.56.0",
     "stripe": "^16.6.0",
-    "@sendgrid/mail": "^8.1.0"
+    "@sendgrid/mail": "^8.1.0",
+    "mailgun.js": "^10.2.1"
   },
   "devDependencies": {
     "jest": "^29.7.0",

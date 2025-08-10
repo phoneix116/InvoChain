@@ -1,35 +1,84 @@
-// Lightweight notifications service (SendGrid based)
-// Safe no-op when SENDGRID_API_KEY is not configured
+// Lightweight notifications service (Mailgun/SendGrid)
+// Safe no-op when provider is not configured
 
-const sgMail = (() => {
-  try {
-    return require('@sendgrid/mail');
-  } catch (e) {
-    return null;
+// Provider selection via env:
+// EMAIL_PROVIDER=mailgun|sendgrid (auto-detects if not set)
+
+// SendGrid setup (optional)
+let sgMail = null;
+try { sgMail = require('@sendgrid/mail'); } catch (_) {}
+
+// Mailgun setup (optional)
+let mgClient = null;
+try {
+  const Mailgun = require('mailgun.js');
+  const FormData = require('form-data');
+  const mg = new Mailgun(FormData);
+  if (process.env.MAILGUN_API_KEY) {
+    mgClient = mg.client({
+      username: 'api',
+      key: process.env.MAILGUN_API_KEY,
+      url: process.env.MAILGUN_BASE_URL || 'https://api.mailgun.net'
+    });
   }
-})();
+} catch (_) {}
 
-const ENABLED = !!process.env.SENDGRID_API_KEY && !!sgMail;
-const FROM_EMAIL = process.env.SENDGRID_FROM || 'no-reply@invoice-chain.local';
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
 
-if (ENABLED) {
-  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-  // Optional: identify the app
-  try { sgMail.setClient(null, { libraryName: 'invoice-chain', libraryVersion: '1.0.0' }); } catch (_) {}
-} else {
-  console.warn('📭 SendGrid not configured; email notifications are disabled');
+// Determine provider in priority order
+let provider = (process.env.EMAIL_PROVIDER || '').toLowerCase();
+if (!provider) {
+  if (mgClient) provider = 'mailgun';
+  else if (process.env.SENDGRID_API_KEY && sgMail) provider = 'sendgrid';
 }
 
-function safeSend(msg) {
-  if (!ENABLED) return Promise.resolve({ disabled: true });
-  return sgMail
-    .send(msg)
-    .then(res => ({ ok: true, res }))
-    .catch(err => {
-      console.error('❌ Email send failed:', err?.response?.body || err.message);
-      return { ok: false, error: err };
-    });
+// Initialize provider
+if (provider === 'sendgrid' && process.env.SENDGRID_API_KEY && sgMail) {
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+  try { sgMail.setClient(null, { libraryName: 'invoice-chain', libraryVersion: '1.0.0' }); } catch (_) {}
+  console.log('📬 Notifications: SendGrid enabled');
+} else if (provider === 'mailgun' && mgClient) {
+  console.log('📬 Notifications: Mailgun enabled');
+} else {
+  console.warn('📭 Email notifications disabled (no provider configured)');
+  provider = 'none';
+}
+
+const FROM_EMAIL = (() => {
+  if (provider === 'mailgun') return process.env.MAILGUN_FROM || `no-reply@${process.env.MAILGUN_DOMAIN || 'invoice-chain.local'}`;
+  if (provider === 'sendgrid') return process.env.SENDGRID_FROM || 'no-reply@invoice-chain.local';
+  return 'no-reply@invoice-chain.local';
+})();
+
+async function safeSend({ to, subject, html }) {
+  if (provider === 'none') return { disabled: true };
+
+  const recipients = Array.isArray(to) ? to : [to].filter(Boolean);
+  if (!recipients.length) return { skipped: true, reason: 'no-recipients' };
+
+  try {
+    if (provider === 'sendgrid') {
+      const msg = { to: recipients, from: FROM_EMAIL, subject, html };
+      const res = await sgMail.send(msg);
+      return { ok: true, res };
+    }
+    if (provider === 'mailgun') {
+      const domain = process.env.MAILGUN_DOMAIN;
+      if (!domain) return { ok: false, error: new Error('MAILGUN_DOMAIN not set') };
+      const res = await mgClient.messages.create(domain, {
+        from: FROM_EMAIL,
+        to: recipients,
+        subject,
+        html
+      });
+      return { ok: true, res };
+    }
+  } catch (err) {
+    const detail = err?.response?.body || err?.response || err?.message;
+    console.error('❌ Email send failed:', detail);
+    return { ok: false, error: err };
+  }
+  return { ok: false, error: new Error('Unknown provider') };
 }
 
 function formatMoney(amount, currency) {
@@ -81,13 +130,7 @@ async function sendInvoiceCreatedEmail(invoiceDoc) {
     `
   });
 
-  const msg = {
-    to: toCandidates,
-    from: FROM_EMAIL,
-    subject: title,
-    html
-  };
-  return safeSend(msg);
+  return safeSend({ to: toCandidates, subject: title, html });
 }
 
 async function sendInvoicePaidEmail(invoiceDoc) {
@@ -115,13 +158,7 @@ async function sendInvoicePaidEmail(invoiceDoc) {
     `
   });
 
-  const msg = {
-    to: toCandidates,
-    from: FROM_EMAIL,
-    subject: title,
-    html
-  };
-  return safeSend(msg);
+  return safeSend({ to: toCandidates, subject: title, html });
 }
 
 async function onInvoiceStatusChange(invoiceDoc, previousStatus) {
