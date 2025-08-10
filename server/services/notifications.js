@@ -174,8 +174,11 @@ async function onInvoiceStatusChange(invoiceDoc, previousStatus) {
 }
 
 module.exports = {
-  ENABLED,
+  ENABLED: provider !== 'none',
+  provider,
   sendInvoiceCreatedEmail,
   sendInvoicePaidEmail,
   onInvoiceStatusChange,
+  // Generic sender for testing/admin
+  sendGenericEmail: ({ to, subject, html }) => safeSend({ to, subject, html })
 };
