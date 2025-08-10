@@ -13,6 +13,9 @@ const User = require('../models/User');
 const Invoice = require('../models/Invoice');
 const Template = require('../models/Template');
 
+// Notifications service
+const notifications = require('../services/notifications');
+
 const router = express.Router();
 
 // Validation schemas
@@ -150,7 +153,8 @@ router.post('/metadata', async (req, res) => {
     });
     
     await invoice.save();
-    
+    // Send notification (best-effort)
+    try { await notifications.sendInvoiceCreatedEmail(invoice); } catch (_) {}
     // Update user stats
     user.stats.totalInvoices += 1;
     await user.save();
@@ -1069,11 +1073,16 @@ router.put('/invoices/:invoiceId/status', async (req, res) => {
       });
     }
 
+    const prevStatus = invoice.status;
+
     if (status === 'paid') {
       await invoice.markAsPaid(transactionHash, blockNumber);
     } else {
       await invoice.updateStatus(status);
     }
+
+    // Notify on status change
+    try { await notifications.onInvoiceStatusChange(invoice, prevStatus); } catch (_) {}
 
     res.json({
       success: true,
