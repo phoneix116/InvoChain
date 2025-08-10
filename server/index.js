@@ -15,6 +15,8 @@ const database = require('./config/database');
 const ipfsRoutes = require('./routes/ipfs');
 const contractRoutes = require('./routes/contract');
 const invoiceRoutes = require('./routes/invoice');
+const paymentRoutes = require('./routes/payments');
+const aiRoutes = require('./routes/ai');
 
 // Load contract ABI and setup
 const contractABI = require('./contracts/InvoiceManager.json').abi;
@@ -122,6 +124,8 @@ try {
 }
 
 app.use('/api/invoice', verifyFirebaseToken, invoiceRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/ai', aiRoutes);
 
 // Auth debug endpoint (returns Firebase user claims when enabled)
 app.get('/api/auth/me', verifyFirebaseToken, (req, res) => {

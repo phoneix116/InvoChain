@@ -13,10 +13,11 @@ import {
   Alert,
   CircularProgress,
 } from '@mui/material';
-import { Download, Payment, Gavel } from '@mui/icons-material';
+import { Download, Payment, Gavel, CreditCard } from '@mui/icons-material';
 import QRCode from 'react-qr-code';
 import { useInvoice } from '../contexts/InvoiceContext';
 import ipfsAPI from '../services/ipfsAPI';
+import paymentsAPI from '../services/paymentsAPI';
 
 const InvoiceDetails = () => {
   const { id } = useParams();
@@ -26,6 +27,7 @@ const InvoiceDetails = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [paymentLoading, setPaymentLoading] = useState(false);
+  const [fiatLoading, setFiatLoading] = useState(false);
 
   useEffect(() => {
     const loadInvoice = async () => {
@@ -143,6 +145,31 @@ const InvoiceDetails = () => {
       alert('Payment failed. Please try again.');
     } finally {
       setPaymentLoading(false);
+    }
+  };
+
+  const handlePayWithCard = async () => {
+    if (!invoice) return;
+    try {
+      setFiatLoading(true);
+      const val = typeof invoice.amount === 'object' ? parseFloat(invoice.amount.toString()) : parseFloat(invoice.amount);
+      const isWeiLike = !isNaN(val) && val > 1e12;
+      const eth = isWeiLike ? (val / 1e18) : val;
+      const approxEthPrice = Number(process.env.REACT_APP_DEMO_ETH_USD || 3000);
+      const amountUSD = Math.max(0.5, Number((eth * approxEthPrice).toFixed(2)));
+      const session = await paymentsAPI.createCheckoutSession({
+        invoiceId: id,
+        title: invoice.description || `Invoice ${id}`,
+        amountUSD,
+        successUrl: `${window.location.origin}/invoice/${id}?fiat=success`,
+        cancelUrl: `${window.location.origin}/invoice/${id}?fiat=cancel`,
+        metadata: { ipfsHash: invoice.ipfsHash || '' },
+      });
+      if (session?.url) window.location.href = session.url;
+    } catch (e) {
+      alert(e.message || 'Failed to start card payment');
+    } finally {
+      setFiatLoading(false);
     }
   };
 
@@ -453,6 +480,25 @@ const InvoiceDetails = () => {
                     }}
                   >
                     {paymentLoading ? 'Processing Payment...' : 'Pay Invoice'}
+                  </Button>
+                )}
+                {invoice.status === 0 && (
+                  <Button
+                    variant="outlined"
+                    startIcon={<CreditCard />}
+                    onClick={handlePayWithCard}
+                    disabled={fiatLoading}
+                    fullWidth
+                    sx={{
+                      borderColor: 'rgba(148, 163, 184, 0.3)',
+                      color: '#94a3b8',
+                      '&:hover': { borderColor: '#3b82f6', color: '#3b82f6', bgcolor: 'rgba(59, 130, 246, 0.1)' },
+                      borderRadius: 2,
+                      textTransform: 'none',
+                      fontWeight: 600
+                    }}
+                  >
+                    {fiatLoading ? 'Redirecting…' : 'Pay with Card'}
                   </Button>
                 )}
               </Box>

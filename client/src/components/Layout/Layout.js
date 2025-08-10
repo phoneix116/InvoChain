@@ -59,7 +59,7 @@ const Layout = ({ children }) => {
     formatAddress,
     isConnecting,
   } = useWallet();
-  const { user, signInWithGoogle, logout: logoutAuth, loading: authLoading } = useAuth();
+  const { user, logout: logoutAuth, loading: authLoading } = useAuth();
   const { userInfo, verifyWalletOwnership } = useInvoice();
 
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -392,13 +392,14 @@ const Layout = ({ children }) => {
                 sx={{ ml: 2, color: '#f8fafc', textTransform: 'none', fontWeight: 700 }}
                 title="Open Profile"
               >
-                {user.displayName || user.email?.split('@')[0] || 'Profile'}
+                {userInfo?.name || user.displayName || user.email?.split('@')[0] || formatAddress(account) || 'Profile'}
               </Button>
+              <Chip label="Linked" size="small" sx={{ ml: 1, bgcolor: 'rgba(59,130,246,0.15)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.3)' }} />
               <Button onClick={logoutAuth} sx={{ ml: 1 }} color="inherit" variant="outlined">Logout</Button>
             </>
           ) : (
-            <Button onClick={signInWithGoogle} sx={{ ml: 2 }} color="inherit" variant="outlined" disabled={authLoading}>
-              {authLoading ? 'Auth…' : 'Login'}
+            <Button onClick={() => navigate('/login')} sx={{ ml: 2 }} color="inherit" variant="outlined" disabled={authLoading}>
+              {authLoading ? 'Auth…' : 'Sign in'}
             </Button>
           )}
         </Toolbar>

@@ -18,16 +18,18 @@ export default function Profile() {
   const { account, formatAddress, balance, network } = useWallet();
   const { userInfo } = useInvoice();
 
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
-
-  const verified = !!userInfo?.verifiedWallet;
-  const stats = userInfo?.stats || {};
-
+  // Hooks must run unconditionally at the top level
   const avatarLetter = useMemo(() => {
     if (user?.displayName) return user.displayName.charAt(0).toUpperCase();
     if (user?.email) return user.email.charAt(0).toUpperCase();
     return account ? account.slice(2, 3).toUpperCase() : '?';
   }, [user, account]);
+
+  // Allow access if either Firebase is authenticated OR wallet is connected (wallet-first flow)
+  if (!isAuthenticated && !account) return <Navigate to="/login" replace />;
+
+  const verified = !!userInfo?.verifiedWallet;
+  const stats = userInfo?.stats || {};
 
   return (
     <Box sx={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)', p: 3 }}>
@@ -38,7 +40,7 @@ export default function Profile() {
           </Box>
           <Box>
             <Typography variant="h5" sx={{ color: '#f8fafc', fontWeight: 700 }}>Profile</Typography>
-            <Typography variant="body2" sx={{ color: '#94a3b8' }}>{user?.email}</Typography>
+            <Typography variant="body2" sx={{ color: '#94a3b8' }}>{userInfo?.email || user?.email || 'Wallet-only'}</Typography>
           </Box>
           <Box sx={{ ml: 'auto' }}>
             {verified ? (
