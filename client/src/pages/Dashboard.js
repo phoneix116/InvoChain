@@ -6,7 +6,6 @@ import {
   Typography,
   Box,
   Button,
-  Paper,
   List,
   ListItem,
   ListItemText,
@@ -15,24 +14,21 @@ import {
   Alert,
   LinearProgress,
   Avatar,
-  IconButton,
   Fade,
   Grow,
   Container,
   Divider,
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import {
   Receipt,
   Add,
   TrendingUp,
   AccountBalanceWallet,
-  Warning,
   CheckCircle,
   AttachMoney,
   Schedule,
-  Gavel,
   Visibility,
-  Analytics,
   AutoGraph,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
@@ -40,6 +36,7 @@ import { useWallet } from '../contexts/WalletContext';
 import { useInvoice } from '../contexts/InvoiceContext';
 
 const Dashboard = () => {
+  const theme = useTheme();
   const navigate = useNavigate();
   const { isConnected, account } = useWallet();
   const { userInvoices, loading, loadUserInvoices, formatInvoiceStatus, getStatusColor } = useInvoice();
@@ -102,49 +99,19 @@ const Dashboard = () => {
       <Card 
         sx={{ 
           height: '100%',
-          background: `linear-gradient(145deg, ${
-            color === 'primary' ? 'rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%' : 
-            color === 'success' ? 'rgba(6, 78, 59, 0.95) 0%, rgba(20, 83, 45, 0.95) 100%' :
-            color === 'warning' ? 'rgba(120, 53, 15, 0.95) 0%, rgba(146, 64, 14, 0.95) 100%' :
-            color === 'error' ? 'rgba(127, 29, 29, 0.95) 0%, rgba(153, 27, 27, 0.95) 100%' :
-            'rgba(30, 58, 138, 0.95) 0%, rgba(37, 99, 235, 0.95) 100%'
-          }`,
-          color: 'white',
+          background: theme.palette.background.paper,
+          color: theme.palette.text.primary,
           borderRadius: 3,
           position: 'relative',
           overflow: 'hidden',
-          border: `1px solid ${
-            color === 'primary' ? 'rgba(59, 130, 246, 0.3)' : 
-            color === 'success' ? 'rgba(34, 197, 94, 0.3)' :
-            color === 'warning' ? 'rgba(245, 158, 11, 0.3)' :
-            color === 'error' ? 'rgba(239, 68, 68, 0.3)' :
-            'rgba(99, 102, 241, 0.3)'
-          }`,
-          boxShadow: `0 10px 25px ${
-            color === 'primary' ? 'rgba(59, 130, 246, 0.15)' : 
-            color === 'success' ? 'rgba(34, 197, 94, 0.15)' :
-            color === 'warning' ? 'rgba(245, 158, 11, 0.15)' :
-            color === 'error' ? 'rgba(239, 68, 68, 0.15)' :
-            'rgba(99, 102, 241, 0.15)'
-          }`,
+          border: `1px solid ${theme.palette.divider}`,
+          boxShadow: theme.palette.mode === 'dark' ? '0 10px 25px rgba(0,0,0,0.3)' : '0 10px 25px rgba(0,0,0,0.1)',
           backdropFilter: 'blur(20px)',
           transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           '&:hover': {
             transform: 'translateY(-8px)',
-            boxShadow: `0 20px 40px ${
-              color === 'primary' ? 'rgba(59, 130, 246, 0.25)' : 
-              color === 'success' ? 'rgba(34, 197, 94, 0.25)' :
-              color === 'warning' ? 'rgba(245, 158, 11, 0.25)' :
-              color === 'error' ? 'rgba(239, 68, 68, 0.25)' :
-              'rgba(99, 102, 241, 0.25)'
-            }`,
-            borderColor: `${
-              color === 'primary' ? 'rgba(59, 130, 246, 0.5)' : 
-              color === 'success' ? 'rgba(34, 197, 94, 0.5)' :
-              color === 'warning' ? 'rgba(245, 158, 11, 0.5)' :
-              color === 'error' ? 'rgba(239, 68, 68, 0.5)' :
-              'rgba(99, 102, 241, 0.5)'
-            }`,
+            boxShadow: theme.palette.mode === 'dark' ? '0 20px 40px rgba(0,0,0,0.4)' : '0 20px 40px rgba(0,0,0,0.15)',
+            borderColor: theme.palette.text.secondary,
           },
           '&::before': {
             content: '""',
@@ -153,57 +120,27 @@ const Dashboard = () => {
             left: 0,
             right: 0,
             height: '2px',
-            background: `linear-gradient(90deg, transparent, ${
-              color === 'primary' ? '#3b82f6' : 
-              color === 'success' ? '#22c55e' :
-              color === 'warning' ? '#f59e0b' :
-              color === 'error' ? '#ef4444' :
-              '#6366f1'
-            }, transparent)`,
+            background: `linear-gradient(90deg, transparent, ${theme.palette.text.secondary}, transparent)`,
           }
         }}
       >
         <CardContent sx={{ p: 3 }}>
           <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-            <Typography variant="h6" sx={{ fontWeight: 600, color: 'black' }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, color: theme.palette.text.primary }}>
               {title}
             </Typography>
             <Avatar 
               sx={{ 
-                bgcolor: `${
-                  color === 'primary' ? 'rgba(59, 130, 246, 0.2)' : 
-                  color === 'success' ? 'rgba(34, 197, 94, 0.2)' :
-                  color === 'warning' ? 'rgba(245, 158, 11, 0.2)' :
-                  color === 'error' ? 'rgba(239, 68, 68, 0.2)' :
-                  'rgba(99, 102, 241, 0.2)'
-                }`, 
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(148,163,184,0.15)' : 'rgba(0,0,0,0.05)', 
                 backdropFilter: 'blur(10px)',
                 width: 48, 
                 height: 48,
-                border: `1px solid ${
-                  color === 'primary' ? 'rgba(59, 130, 246, 0.3)' : 
-                  color === 'success' ? 'rgba(34, 197, 94, 0.3)' :
-                  color === 'warning' ? 'rgba(245, 158, 11, 0.3)' :
-                  color === 'error' ? 'rgba(239, 68, 68, 0.3)' :
-                  'rgba(99, 102, 241, 0.3)'
-                }`,
-                color: `${
-                  color === 'primary' ? '#3b82f6' : 
-                  color === 'success' ? '#22c55e' :
-                  color === 'warning' ? '#f59e0b' :
-                  color === 'error' ? '#ef4444' :
-                  '#6366f1'
-                }`,
+                border: `1px solid ${theme.palette.divider}`,
+                color: theme.palette.text.secondary,
                 transition: 'all 0.3s ease',
                 '&:hover': {
                   transform: 'scale(1.1)',
-                  bgcolor: `${
-                    color === 'primary' ? 'rgba(59, 130, 246, 0.3)' : 
-                    color === 'success' ? 'rgba(34, 197, 94, 0.3)' :
-                    color === 'warning' ? 'rgba(245, 158, 11, 0.3)' :
-                    color === 'error' ? 'rgba(239, 68, 68, 0.3)' :
-                    'rgba(99, 102, 241, 0.3)'
-                  }`,
+                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(148,163,184,0.25)' : 'rgba(0,0,0,0.08)',
                 }
               }}
             >
@@ -217,7 +154,7 @@ const Dashboard = () => {
             sx={{ 
               fontWeight: 700, 
               mb: 2,
-              color: 'black',
+              color: theme.palette.text.primary,
               fontSize: { xs: '1.75rem', md: '2.25rem' }
             }}
           >
@@ -232,33 +169,15 @@ const Dashboard = () => {
                 sx={{ 
                   height: 6, 
                   borderRadius: 3,
-                  backgroundColor: 'rgba(148, 163, 184, 0.2)',
+                  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(148, 163, 184, 0.2)' : 'rgba(0,0,0,0.08)',
                   '& .MuiLinearProgress-bar': {
-                    background: `linear-gradient(90deg, ${
-                      color === 'primary' ? '#3b82f6' : 
-                      color === 'success' ? '#22c55e' :
-                      color === 'warning' ? '#f59e0b' :
-                      color === 'error' ? '#ef4444' :
-                      '#6366f1'
-                    } 0%, ${
-                      color === 'primary' ? '#60a5fa' : 
-                      color === 'success' ? '#4ade80' :
-                      color === 'warning' ? '#fbbf24' :
-                      color === 'error' ? '#f87171' :
-                      '#818cf8'
-                    } 100%)`,
+                    background: theme.palette.mode === 'dark' ? 'linear-gradient(90deg, #374151 0%, #6b7280 100%)' : 'linear-gradient(90deg, #111827 0%, #374151 100%)',
                     borderRadius: 3,
-                    boxShadow: `0 0 10px ${
-                      color === 'primary' ? 'rgba(59, 130, 246, 0.3)' : 
-                      color === 'success' ? 'rgba(34, 197, 94, 0.3)' :
-                      color === 'warning' ? 'rgba(245, 158, 11, 0.3)' :
-                      color === 'error' ? 'rgba(239, 68, 68, 0.3)' :
-                      'rgba(99, 102, 241, 0.3)'
-                    }`,
+                    boxShadow: theme.palette.mode === 'dark' ? '0 0 10px rgba(148,163,184,0.3)' : '0 0 10px rgba(0,0,0,0.15)',
                   }
                 }} 
               />
-              <Typography variant="caption" sx={{ color: 'black', mt: 1, display: 'block', fontWeight: 500 }}>
+              <Typography variant="caption" sx={{ color: theme.palette.text.secondary, mt: 1, display: 'block', fontWeight: 500 }}>
                 {progress.toFixed(1)}% completion
               </Typography>
             </Box>
@@ -269,12 +188,12 @@ const Dashboard = () => {
                  sx={{ 
                    p: 1.5, 
                    borderRadius: 2, 
-                   bgcolor: 'rgba(148, 163, 184, 0.1)', 
+                   bgcolor: theme.palette.mode === 'dark' ? 'rgba(148, 163, 184, 0.1)' : 'rgba(0,0,0,0.02)', 
                    backdropFilter: 'blur(10px)',
-                   border: '1px solid rgba(148, 163, 184, 0.2)'
+                   border: `1px solid ${theme.palette.divider}`
                  }}>
-              <AutoGraph sx={{ fontSize: 16, mr: 1, color: 'black' }} />
-              <Typography variant="caption" sx={{ color: 'black', fontWeight: 500 }}>
+              <AutoGraph sx={{ fontSize: 16, mr: 1, color: theme.palette.text.secondary }} />
+              <Typography variant="caption" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>
                 {trend}
               </Typography>
             </Box>
@@ -289,7 +208,7 @@ const Dashboard = () => {
       <Box 
         sx={{ 
           minHeight: '100vh',
-          background: 'linear-gradient(135deg, #0a0e27 0%, #1a1d3a 25%, #2d3561 50%, #3b4371 75%, #4a5282 100%)',
+          background: theme.palette.mode === 'dark' ? 'linear-gradient(135deg, #0a0e27 0%, #1a1d3a 25%, #2d3561 50%, #3b4371 75%, #4a5282 100%)' : theme.palette.background.default,
           position: 'relative',
           '&::before': {
             content: '""',
@@ -298,11 +217,11 @@ const Dashboard = () => {
             left: 0,
             right: 0,
             bottom: 0,
-            background: `
-              radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
-              radial-gradient(circle at 80% 20%, rgba(147, 197, 253, 0.1) 0%, transparent 50%),
-              radial-gradient(circle at 40% 40%, rgba(96, 165, 250, 0.05) 0%, transparent 50%)
-            `,
+            background: theme.palette.mode === 'dark' ? `
+              radial-gradient(circle at 20% 80%, rgba(148,163,184, 0.08) 0%, transparent 50%),
+              radial-gradient(circle at 80% 20%, rgba(148,163,184, 0.06) 0%, transparent 50%),
+              radial-gradient(circle at 40% 40%, rgba(148,163,184, 0.04) 0%, transparent 50%)
+            ` : 'none',
             pointerEvents: 'none',
           }
         }}
@@ -319,13 +238,13 @@ const Dashboard = () => {
             <Fade in={true} timeout={1000}>
               <Box 
                 sx={{
-                  background: 'linear-gradient(145deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
+                  background: theme.palette.background.paper,
                   borderRadius: 3,
                   p: 6,
                   mb: 4,
                   backdropFilter: 'blur(20px)',
-                  border: '1px solid rgba(148, 163, 184, 0.2)',
-                  boxShadow: '0 25px 50px rgba(0, 0, 0, 0.25)',
+                  border: `1px solid ${theme.palette.divider}`,
+                  boxShadow: theme.palette.mode === 'dark' ? '0 25px 50px rgba(0, 0, 0, 0.25)' : '0 25px 50px rgba(0, 0, 0, 0.1)',
                   position: 'relative',
                   overflow: 'hidden',
                   '&::before': {
@@ -335,7 +254,7 @@ const Dashboard = () => {
                     left: 0,
                     right: 0,
                     height: '1px',
-                    background: 'linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.5), transparent)',
+                    background: `linear-gradient(90deg, transparent, ${theme.palette.divider}, transparent)`,
                   }
                 }}
               >
@@ -343,9 +262,9 @@ const Dashboard = () => {
                   <AccountBalanceWallet 
                     sx={{ 
                       fontSize: 80, 
-                      color: '#3b82f6', 
+                      color: theme.palette.text.secondary, 
                       mb: 3,
-                      filter: 'drop-shadow(0 4px 20px rgba(59, 130, 246, 0.3))',
+                      filter: theme.palette.mode === 'dark' ? 'drop-shadow(0 4px 20px rgba(148,163,184, 0.3))' : 'drop-shadow(0 4px 20px rgba(0,0,0, 0.15))',
                     }} 
                   />
                   <Typography 
@@ -353,7 +272,7 @@ const Dashboard = () => {
                     gutterBottom
                     sx={{
                       fontWeight: 700,
-                      color: '#f8fafc',
+                      color: theme.palette.text.primary,
                       fontSize: { xs: '2rem', md: '2.5rem' },
                       letterSpacing: '-0.025em',
                       mb: 2
@@ -363,7 +282,7 @@ const Dashboard = () => {
                   </Typography>
                   <Typography 
                     variant="h6" 
-                    color="#94a3b8" 
+                    color={theme.palette.text.secondary} 
                     paragraph
                     sx={{
                       fontWeight: 400,
@@ -387,7 +306,7 @@ const Dashboard = () => {
     <Box 
       sx={{ 
         minHeight: '100vh',
-        background: '#0f172a',
+        background: theme.palette.mode === 'dark' ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)' : theme.palette.background.default,
         position: 'relative',
       }}
     >

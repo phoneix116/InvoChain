@@ -11,17 +11,22 @@ import {
   Button,
   Chip,
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
+import { useThemeMode } from '../contexts/ThemeContext';
 import { useWallet } from '../contexts/WalletContext';
 import { useInvoice } from '../contexts/InvoiceContext';
 import invoiceAPI from '../services/invoiceAPI';
 import { toast } from 'react-toastify';
 
 const Settings = () => {
+  const theme = useTheme();
+  const { mode, toggle } = useThemeMode();
+
   return (
     <Box 
       sx={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)',
+        background: theme.palette.mode === 'dark' ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)' : theme.palette.background.default,
         p: 3
       }}
     >
@@ -31,31 +36,66 @@ const Settings = () => {
           component="h1" 
           gutterBottom
           sx={{ 
-            color: '#f8fafc', 
+            color: theme.palette.text.primary, 
             fontWeight: 700,
-            mb: 4,
+            mb: 2,
             textAlign: 'center',
-            background: 'linear-gradient(90deg, #f8fafc 0%, #60a5fa 50%, #f8fafc 100%)',
-            backgroundClip: 'text',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent'
+            letterSpacing: '-0.015em'
           }}
         >
           Application Settings
         </Typography>
         
+        {/* Theme Mode Toggle Card */}
+        <Card sx={{ 
+          background: theme.palette.background.paper, 
+          border: `1px solid ${theme.palette.divider}`,
+          mb: 3,
+          borderRadius: 3
+        }}>
+          <CardContent>
+            <Box display="flex" justifyContent="space-between" alignItems="center">
+              <Box>
+                <Typography variant="h6" sx={{ color: theme.palette.text.primary, fontWeight: 600 }}>
+                  Theme Mode
+                </Typography>
+                <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
+                  Switch between dark and light themes
+                </Typography>
+              </Box>
+              <Box display="flex" alignItems="center" gap={2}>
+                <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
+                  {mode === 'dark' ? 'Dark' : 'Light'}
+                </Typography>
+                <Button 
+                  variant="outlined" 
+                  onClick={toggle}
+                  sx={{
+                    borderRadius: 2,
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    minWidth: 120
+                  }}
+                >
+                  Switch to {mode === 'dark' ? 'Light' : 'Dark'}
+                </Button>
+              </Box>
+            </Box>
+          </CardContent>
+        </Card>
+        
   <Alert 
           severity="info"
           sx={{
-            bgcolor: 'rgba(99, 102, 241, 0.1)',
-            border: '1px solid rgba(99, 102, 241, 0.2)',
-            color: '#6366f1',
+            bgcolor: theme.palette.mode === 'dark' ? 'rgba(148, 163, 184, 0.08)' : 'rgba(0,0,0,0.02)',
+            border: `1px solid ${theme.palette.divider}`,
+            color: theme.palette.text.primary,
             borderRadius: 2,
             '& .MuiAlert-icon': {
-              color: '#6366f1'
+              color: theme.palette.text.secondary
             },
             '& ul': {
-              color: '#94a3b8',
+              color: theme.palette.text.secondary,
               mt: 1
             },
             '& li': {
@@ -63,10 +103,10 @@ const Settings = () => {
             }
           }}
         >
-          <Typography variant="body1" sx={{ color: '#f8fafc', fontWeight: 600, mb: 2 }}>
+          <Typography variant="body1" sx={{ color: theme.palette.text.primary, fontWeight: 600, mb: 2 }}>
             Settings configuration panel coming soon!
           </Typography>
-          <Typography variant="body2" sx={{ color: '#94a3b8', mb: 1 }}>
+          <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 1 }}>
             This settings panel will provide comprehensive control over:
           </Typography>
           <ul>
@@ -82,9 +122,9 @@ const Settings = () => {
         {/* Profile Card */}
         <Grid container spacing={3} sx={{ mt: 2 }}>
           <Grid item xs={12} md={6}>
-            <Card sx={{ background: 'rgba(15,23,42,0.6)', border: '1px solid rgba(148,163,184,0.2)' }}>
+      <Card sx={{ background: theme.palette.background.paper, border: `1px solid ${theme.palette.divider}` }}>
               <CardContent>
-                <Typography variant="h6" sx={{ color: '#f8fafc', mb: 2, fontWeight: 700 }}>User Profile</Typography>
+        <Typography variant="h6" sx={{ color: theme.palette.text.primary, mb: 2, fontWeight: 700 }}>User Profile</Typography>
                 <ProfileForm />
               </CardContent>
             </Card>
@@ -143,11 +183,12 @@ const ProfileForm = () => {
     }
   };
 
+  const theme = useTheme();
   return (
     <Box>
       <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Typography variant="body2" sx={{ color: '#94a3b8' }}>Wallet:</Typography>
-        <Typography variant="body2" sx={{ color: '#f8fafc', fontWeight: 600 }}>{formatAddress(account)}</Typography>
+        <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>Wallet:</Typography>
+        <Typography variant="body2" sx={{ color: theme.palette.text.primary, fontWeight: 600 }}>{formatAddress(account)}</Typography>
         {verified ? (
           <Chip size="small" label="Verified" sx={{ bgcolor: 'rgba(34,197,94,0.15)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.3)' }} />
         ) : (
@@ -157,19 +198,19 @@ const ProfileForm = () => {
 
       <Grid container spacing={2}>
         <Grid item xs={12} md={6}>
-          <TextField fullWidth label="Name" name="name" value={form.name} onChange={onChange} variant="outlined" InputLabelProps={{ sx: { color: '#94a3b8' } }} sx={{ '& .MuiOutlinedInput-root': { color: '#f8fafc' } }} />
+          <TextField fullWidth label="Name" name="name" value={form.name} onChange={onChange} variant="outlined" />
         </Grid>
         <Grid item xs={12} md={6}>
-          <TextField fullWidth label="Email" name="email" value={form.email} onChange={onChange} variant="outlined" InputLabelProps={{ sx: { color: '#94a3b8' } }} sx={{ '& .MuiOutlinedInput-root': { color: '#f8fafc' } }} />
+          <TextField fullWidth label="Email" name="email" value={form.email} onChange={onChange} variant="outlined" />
         </Grid>
         <Grid item xs={12} md={6}>
-          <TextField fullWidth label="Company" name="company" value={form.company} onChange={onChange} variant="outlined" InputLabelProps={{ sx: { color: '#94a3b8' } }} sx={{ '& .MuiOutlinedInput-root': { color: '#f8fafc' } }} />
+          <TextField fullWidth label="Company" name="company" value={form.company} onChange={onChange} variant="outlined" />
         </Grid>
         <Grid item xs={12} md={6}>
-          <TextField fullWidth label="Timezone" name="timezone" value={form.timezone} onChange={onChange} variant="outlined" InputLabelProps={{ sx: { color: '#94a3b8' } }} sx={{ '& .MuiOutlinedInput-root': { color: '#f8fafc' } }} />
+          <TextField fullWidth label="Timezone" name="timezone" value={form.timezone} onChange={onChange} variant="outlined" />
         </Grid>
         <Grid item xs={12} md={6}>
-          <TextField fullWidth label="Default Currency" name="defaultCurrency" value={form.defaultCurrency} onChange={onChange} variant="outlined" InputLabelProps={{ sx: { color: '#94a3b8' } }} sx={{ '& .MuiOutlinedInput-root': { color: '#f8fafc' } }} />
+          <TextField fullWidth label="Default Currency" name="defaultCurrency" value={form.defaultCurrency} onChange={onChange} variant="outlined" />
         </Grid>
       </Grid>
 

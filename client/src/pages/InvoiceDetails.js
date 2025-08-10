@@ -8,19 +8,20 @@ import {
   Grid,
   Button,
   Chip,
-  Paper,
   Divider,
   Alert,
   CircularProgress,
 } from '@mui/material';
-import { Download, Payment, Gavel, CreditCard } from '@mui/icons-material';
+import { useTheme } from '@mui/material/styles';
+import { Download, Payment, CreditCard } from '@mui/icons-material';
 import QRCode from 'react-qr-code';
 import { useInvoice } from '../contexts/InvoiceContext';
-import ipfsAPI from '../services/ipfsAPI';
 import paymentsAPI from '../services/paymentsAPI';
+import notificationsAPI from '../services/notificationsAPI';
 
 const InvoiceDetails = () => {
   const { id } = useParams();
+  const theme = useTheme();
   const { getInvoiceDetails, formatInvoiceStatus, getStatusColor, payInvoiceETH, payInvoiceToken } = useInvoice();
   
   const [invoice, setInvoice] = useState(null);
@@ -28,6 +29,10 @@ const InvoiceDetails = () => {
   const [error, setError] = useState(null);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [fiatLoading, setFiatLoading] = useState(false);
+  const [emailLoading, setEmailLoading] = useState(false);
+  const hasRecipientEmail = Boolean(
+    invoice?.recipientEmail || invoice?.recipient?.email || invoice?.recipientEmailAddress
+  );
 
   useEffect(() => {
     const loadInvoice = async () => {
@@ -172,6 +177,27 @@ const InvoiceDetails = () => {
       setFiatLoading(false);
     }
   };
+  
+  const handleEmailInvoice = async () => {
+    if (!invoice) return;
+    let overrideEmail;
+    if (!hasRecipientEmail) {
+      overrideEmail = window.prompt('No recipient email on this invoice. Enter an email to send to:');
+      if (!overrideEmail || !overrideEmail.includes('@')) {
+        alert('Please enter a valid email address.');
+        return;
+      }
+    }
+    try {
+      setEmailLoading(true);
+      await notificationsAPI.sendInvoiceEmail(id, overrideEmail);
+      alert('Invoice email sent (Mailgun)');
+    } catch (e) {
+      alert(e.message || 'Failed to send invoice email');
+    } finally {
+      setEmailLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -181,20 +207,20 @@ const InvoiceDetails = () => {
         alignItems="center" 
         minHeight="50vh"
         sx={{
-          background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)',
+          background: theme.palette.mode === 'dark' ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)' : theme.palette.background.default,
         }}
       >
-        <CircularProgress size={60} sx={{ color: '#3b82f6' }} />
+        <CircularProgress size={60} sx={{ color: theme.palette.text.secondary }} />
       </Box>
     );
   }
 
   if (error) {
     return (
-      <Box 
+    <Box 
         sx={{
           minHeight: '100vh',
-          background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)',
+      background: theme.palette.mode === 'dark' ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)' : theme.palette.background.default,
           p: 3,
           display: 'flex',
           alignItems: 'center',
@@ -221,10 +247,10 @@ const InvoiceDetails = () => {
 
   if (!invoice) {
     return (
-      <Box 
+    <Box 
         sx={{
           minHeight: '100vh',
-          background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)',
+      background: theme.palette.mode === 'dark' ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)' : theme.palette.background.default,
           p: 3,
           display: 'flex',
           alignItems: 'center',
@@ -250,10 +276,10 @@ const InvoiceDetails = () => {
   }
 
   return (
-    <Box 
+  <Box 
       sx={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)',
+    background: theme.palette.mode === 'dark' ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)' : theme.palette.background.default,
         p: 3
       }}
     >
@@ -261,12 +287,9 @@ const InvoiceDetails = () => {
         <Typography 
           variant="h4" 
           sx={{ 
-            color: '#f8fafc', 
+      color: theme.palette.text.primary, 
             fontWeight: 700,
-            background: 'linear-gradient(90deg, #f8fafc 0%, #60a5fa 50%, #f8fafc 100%)',
-            backgroundClip: 'text',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent'
+      letterSpacing: '-0.015em'
           }}
         >
           Invoice #{id}
@@ -288,9 +311,9 @@ const InvoiceDetails = () => {
         <Grid item xs={12} md={8}>
           <Card 
             sx={{
-              background: 'linear-gradient(145deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
+              background: theme.palette.background.paper,
               borderRadius: 3,
-              border: '1px solid rgba(148, 163, 184, 0.2)',
+              border: `1px solid ${theme.palette.divider}`,
               boxShadow: '0 25px 50px rgba(0, 0, 0, 0.25)',
               backdropFilter: 'blur(20px)',
               position: 'relative',
@@ -301,12 +324,12 @@ const InvoiceDetails = () => {
                 left: 0,
                 right: 0,
                 height: '2px',
-                background: 'linear-gradient(90deg, transparent, #3b82f6, transparent)',
+                background: theme.palette.mode === 'dark' ? 'linear-gradient(90deg, transparent, rgba(148,163,184,0.3), transparent)' : 'linear-gradient(90deg, transparent, rgba(0,0,0,0.12), transparent)',
               }
             }}
           >
             <CardContent sx={{ p: 4 }}>
-              <Typography variant="h6" gutterBottom sx={{ color: '#f8fafc', fontWeight: 600, mb: 3 }}>
+              <Typography variant="h6" gutterBottom sx={{ color: theme.palette.text.primary, fontWeight: 600, mb: 3 }}>
                 Invoice Details
               </Typography>
               <Grid container spacing={3}>
@@ -314,12 +337,12 @@ const InvoiceDetails = () => {
                   <Box 
                     sx={{ 
                       p: 2, 
-                      bgcolor: 'rgba(15, 23, 42, 0.8)', 
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(15, 23, 42, 0.8)' : 'rgba(0,0,0,0.02)', 
                       borderRadius: 2,
-                      border: '1px solid rgba(148, 163, 184, 0.2)'
+                      border: `1px solid ${theme.palette.divider}`
                     }}
                   >
-                    <Typography variant="subtitle2" sx={{ color: '#94a3b8', mb: 1 }}>
+                    <Typography variant="subtitle2" sx={{ color: theme.palette.text.secondary, mb: 1 }}>
                       Amount
                     </Typography>
                     <Typography variant="h5" sx={{ color: '#22c55e', fontWeight: 700 }}>
@@ -336,15 +359,15 @@ const InvoiceDetails = () => {
                   <Box 
                     sx={{ 
                       p: 2, 
-                      bgcolor: 'rgba(15, 23, 42, 0.8)', 
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(15, 23, 42, 0.8)' : 'rgba(0,0,0,0.02)', 
                       borderRadius: 2,
-                      border: '1px solid rgba(148, 163, 184, 0.2)'
+                      border: `1px solid ${theme.palette.divider}`
                     }}
                   >
-                    <Typography variant="subtitle2" sx={{ color: '#94a3b8', mb: 1 }}>
+                    <Typography variant="subtitle2" sx={{ color: theme.palette.text.secondary, mb: 1 }}>
                       Due Date
                     </Typography>
-                    <Typography variant="body1" sx={{ color: '#f8fafc', fontWeight: 500 }}>
+                    <Typography variant="body1" sx={{ color: theme.palette.text.primary, fontWeight: 500 }}>
                       {new Date(invoice.dueDate).toLocaleDateString()}
                     </Typography>
                   </Box>
@@ -353,37 +376,37 @@ const InvoiceDetails = () => {
                   <Box 
                     sx={{ 
                       p: 2, 
-                      bgcolor: 'rgba(15, 23, 42, 0.8)', 
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(15, 23, 42, 0.8)' : 'rgba(0,0,0,0.02)', 
                       borderRadius: 2,
-                      border: '1px solid rgba(148, 163, 184, 0.2)'
+                      border: `1px solid ${theme.palette.divider}`
                     }}
                   >
-                    <Typography variant="subtitle2" sx={{ color: '#94a3b8', mb: 1 }}>
+                    <Typography variant="subtitle2" sx={{ color: theme.palette.text.secondary, mb: 1 }}>
                       Description
                     </Typography>
-                    <Typography variant="body1" sx={{ color: '#f8fafc' }}>
+                    <Typography variant="body1" sx={{ color: theme.palette.text.primary }}>
                       {invoice.description || 'No description provided'}
                     </Typography>
                   </Box>
                 </Grid>
               </Grid>
 
-              <Divider sx={{ my: 3, borderColor: 'rgba(148, 163, 184, 0.2)' }} />
+              <Divider sx={{ my: 3, borderColor: theme.palette.divider }} />
 
               <Grid container spacing={3}>
                 <Grid item xs={6}>
                   <Box 
                     sx={{ 
                       p: 2, 
-                      bgcolor: 'rgba(15, 23, 42, 0.8)', 
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(15, 23, 42, 0.8)' : 'rgba(0,0,0,0.02)', 
                       borderRadius: 2,
-                      border: '1px solid rgba(148, 163, 184, 0.2)'
+                      border: `1px solid ${theme.palette.divider}`
                     }}
                   >
-                    <Typography variant="subtitle2" sx={{ color: '#94a3b8', mb: 1 }}>
+                    <Typography variant="subtitle2" sx={{ color: theme.palette.text.secondary, mb: 1 }}>
                       Issuer
                     </Typography>
-                    <Typography variant="body1" sx={{ color: '#f8fafc', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                    <Typography variant="body1" sx={{ color: theme.palette.text.primary, fontFamily: 'monospace', wordBreak: 'break-all' }}>
                       {invoice.issuer}
                     </Typography>
                   </Box>
@@ -392,15 +415,15 @@ const InvoiceDetails = () => {
                   <Box 
                     sx={{ 
                       p: 2, 
-                      bgcolor: 'rgba(15, 23, 42, 0.8)', 
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(15, 23, 42, 0.8)' : 'rgba(0,0,0,0.02)', 
                       borderRadius: 2,
-                      border: '1px solid rgba(148, 163, 184, 0.2)'
+                      border: `1px solid ${theme.palette.divider}`
                     }}
                   >
-                    <Typography variant="subtitle2" sx={{ color: '#94a3b8', mb: 1 }}>
+                    <Typography variant="subtitle2" sx={{ color: theme.palette.text.secondary, mb: 1 }}>
                       Recipient
                     </Typography>
-                    <Typography variant="body1" sx={{ color: '#f8fafc', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                    <Typography variant="body1" sx={{ color: theme.palette.text.primary, fontFamily: 'monospace', wordBreak: 'break-all' }}>
                       {invoice.recipient}
                     </Typography>
                   </Box>
@@ -413,9 +436,9 @@ const InvoiceDetails = () => {
         <Grid item xs={12} md={4}>
           <Card 
             sx={{
-              background: 'linear-gradient(145deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
+              background: theme.palette.background.paper,
               borderRadius: 3,
-              border: '1px solid rgba(148, 163, 184, 0.2)',
+              border: `1px solid ${theme.palette.divider}`,
               boxShadow: '0 25px 50px rgba(0, 0, 0, 0.25)',
               backdropFilter: 'blur(20px)',
               position: 'relative',
@@ -426,12 +449,12 @@ const InvoiceDetails = () => {
                 left: 0,
                 right: 0,
                 height: '2px',
-                background: 'linear-gradient(90deg, transparent, #22c55e, transparent)',
+                background: theme.palette.mode === 'dark' ? 'linear-gradient(90deg, transparent, rgba(148,163,184,0.3), transparent)' : 'linear-gradient(90deg, transparent, rgba(0,0,0,0.12), transparent)',
               }
             }}
           >
             <CardContent sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom sx={{ color: '#f8fafc', fontWeight: 600, mb: 3 }}>
+              <Typography variant="h6" gutterBottom sx={{ color: theme.palette.text.primary, fontWeight: 600, mb: 3 }}>
                 Actions
               </Typography>
               <Box display="flex" flexDirection="column" gap={2}>
@@ -442,12 +465,12 @@ const InvoiceDetails = () => {
                   disabled={!invoice?.ipfsHash}
                   fullWidth
                   sx={{
-                    borderColor: invoice?.ipfsHash ? 'rgba(148, 163, 184, 0.3)' : 'rgba(148, 163, 184, 0.1)',
-                    color: invoice?.ipfsHash ? '#94a3b8' : 'rgba(148, 163, 184, 0.5)',
+                    borderColor: invoice?.ipfsHash ? theme.palette.divider : 'rgba(148, 163, 184, 0.1)',
+                    color: invoice?.ipfsHash ? theme.palette.text.secondary : 'rgba(148, 163, 184, 0.5)',
                     '&:hover': {
-                      borderColor: invoice?.ipfsHash ? '#3b82f6' : 'rgba(148, 163, 184, 0.1)',
-                      color: invoice?.ipfsHash ? '#3b82f6' : 'rgba(148, 163, 184, 0.5)',
-                      bgcolor: invoice?.ipfsHash ? 'rgba(59, 130, 246, 0.1)' : 'transparent'
+                      borderColor: invoice?.ipfsHash ? theme.palette.text.secondary : 'rgba(148, 163, 184, 0.1)',
+                      color: invoice?.ipfsHash ? theme.palette.text.primary : 'rgba(148, 163, 184, 0.5)',
+                      bgcolor: invoice?.ipfsHash ? (theme.palette.mode === 'dark' ? 'rgba(148, 163, 184, 0.1)' : 'rgba(0,0,0,0.04)') : 'transparent'
                     },
                     '&:disabled': {
                       borderColor: 'rgba(148, 163, 184, 0.1)',
@@ -468,10 +491,11 @@ const InvoiceDetails = () => {
                     disabled={paymentLoading}
                     fullWidth
                     sx={{
-                      bgcolor: 'rgba(59, 130, 246, 0.9)',
-                      '&:hover': { bgcolor: '#3b82f6' },
+                      bgcolor: theme.palette.mode === 'dark' ? '#1f2937' : '#111827',
+                      color: theme.palette.primary.contrastText,
+                      '&:hover': { bgcolor: theme.palette.mode === 'dark' ? '#374151' : '#000000' },
                       '&:disabled': { 
-                        bgcolor: 'rgba(59, 130, 246, 0.5)',
+                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(31,41,55,0.6)' : 'rgba(0,0,0,0.3)',
                         color: 'rgba(255, 255, 255, 0.7)' 
                       },
                       borderRadius: 2,
@@ -490,9 +514,9 @@ const InvoiceDetails = () => {
                     disabled={fiatLoading}
                     fullWidth
                     sx={{
-                      borderColor: 'rgba(148, 163, 184, 0.3)',
-                      color: '#94a3b8',
-                      '&:hover': { borderColor: '#3b82f6', color: '#3b82f6', bgcolor: 'rgba(59, 130, 246, 0.1)' },
+                      borderColor: theme.palette.divider,
+                      color: theme.palette.text.secondary,
+                      '&:hover': { borderColor: theme.palette.text.secondary, color: theme.palette.text.primary, bgcolor: theme.palette.mode === 'dark' ? 'rgba(148,163,184,0.1)' : 'rgba(0,0,0,0.04)' },
                       borderRadius: 2,
                       textTransform: 'none',
                       fontWeight: 600
@@ -501,6 +525,22 @@ const InvoiceDetails = () => {
                     {fiatLoading ? 'Redirecting…' : 'Pay with Card'}
                   </Button>
                 )}
+                <Button
+                  variant="outlined"
+                  onClick={handleEmailInvoice}
+                  disabled={emailLoading || !hasRecipientEmail}
+                  fullWidth
+                  sx={{
+                    borderColor: theme.palette.divider,
+                    color: theme.palette.text.secondary,
+                    '&:hover': { borderColor: theme.palette.text.secondary, color: theme.palette.text.primary, bgcolor: theme.palette.mode === 'dark' ? 'rgba(148,163,184,0.1)' : 'rgba(0,0,0,0.04)' },
+                    borderRadius: 2,
+                    textTransform: 'none',
+                    fontWeight: 600
+                  }}
+                >
+                  {emailLoading ? 'Sending…' : hasRecipientEmail ? 'Email Invoice' : 'No Recipient Email'}
+                </Button>
               </Box>
             </CardContent>
           </Card>
@@ -508,9 +548,9 @@ const InvoiceDetails = () => {
           <Card 
             sx={{ 
               mt: 2,
-              background: 'linear-gradient(145deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
+              background: theme.palette.background.paper,
               borderRadius: 3,
-              border: '1px solid rgba(148, 163, 184, 0.2)',
+              border: `1px solid ${theme.palette.divider}`,
               boxShadow: '0 25px 50px rgba(0, 0, 0, 0.25)',
               backdropFilter: 'blur(20px)',
               position: 'relative',
@@ -521,12 +561,12 @@ const InvoiceDetails = () => {
                 left: 0,
                 right: 0,
                 height: '2px',
-                background: 'linear-gradient(90deg, transparent, #8b5cf6, transparent)',
+                background: theme.palette.mode === 'dark' ? 'linear-gradient(90deg, transparent, rgba(148,163,184,0.3), transparent)' : 'linear-gradient(90deg, transparent, rgba(0,0,0,0.12), transparent)',
               }
             }}
           >
             <CardContent sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom sx={{ color: '#f8fafc', fontWeight: 600, mb: 3 }}>
+              <Typography variant="h6" gutterBottom sx={{ color: theme.palette.text.primary, fontWeight: 600, mb: 3 }}>
                 QR Code
               </Typography>
               <Box 
@@ -536,7 +576,7 @@ const InvoiceDetails = () => {
                   p: 2,
                   bgcolor: '#ffffff',
                   borderRadius: 2,
-                  border: '2px solid rgba(148, 163, 184, 0.2)'
+                  border: `2px solid ${theme.palette.divider}`
                 }}
               >
                 <QRCode
