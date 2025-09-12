@@ -20,15 +20,36 @@ const aiRoutes = require('./routes/ai');
 const notificationsRoutes = require('./routes/notifications');
 
 // Load contract ABI and setup
-const contractABI = require('./contracts/InvoiceManager.json').abi;
-const contractAddress = '0x5FbDB2315678afecb367f032d93F642f64180aa3';
+let contractABI = [];
+let contractAddress = process.env.CONTRACT_ADDRESS || '';
+try {
+  // Prefer the client artifact written by deploy script
+  const clientArtifact = require('../client/src/contracts/InvoiceManager.json');
+  contractABI = clientArtifact.abi || [];
+  if (!contractAddress && clientArtifact.address) {
+    contractAddress = clientArtifact.address;
+  }
+} catch (e) {
+  try {
+    // Fallback to server copy if available
+    const serverArtifact = require('./contracts/InvoiceManager.json');
+    contractABI = serverArtifact.abi || [];
+    contractAddress = contractAddress || serverArtifact.address || contractAddress;
+  } catch (_) {
+    console.warn('Contract artifact not found. Deploy the contract to generate artifacts.');
+  }
+}
 
 // Initialize provider and contract
 let provider, contract;
 try {
-  provider = new ethers.JsonRpcProvider('http://localhost:8545');
-  contract = new ethers.Contract(contractAddress, contractABI, provider);
-  console.log('✅ Contract loaded:', contractAddress);
+  provider = new ethers.JsonRpcProvider(process.env.RPC_URL || 'http://localhost:8545');
+  if (contractAddress && contractABI && contractABI.length) {
+    contract = new ethers.Contract(contractAddress, contractABI, provider);
+    console.log('✅ Contract loaded:', contractAddress);
+  } else {
+    console.warn('⚠️ Contract address/ABI not available yet. Contract routes may return 404 until deployed.');
+  }
 } catch (error) {
   console.error('❌ Contract setup error:', error.message);
 }
@@ -82,7 +103,9 @@ app.use('/api/contract', contractRoutes);
 // Optional Firebase auth (enabled via env FIREBASE_ADMIN_ENABLED=true)
 let verifyFirebaseToken = (req, res, next) => next();
 try {
-  if (process.env.FIREBASE_ADMIN_ENABLED === 'true') {
+  const adminEnabled = process.env.FIREBASE_ADMIN_ENABLED === 'true';
+  console.log(`🔐 Firebase admin auth enabled: ${adminEnabled}`);
+  if (adminEnabled) {
     const admin = require('firebase-admin');
     const fs = require('fs');
 
@@ -119,6 +142,9 @@ try {
         return res.status(401).json({ error: 'Invalid token' });
       }
     };
+  } else {
+    // Explicitly keep auth middleware as a no-op in development
+    verifyFirebaseToken = (req, res, next) => next();
   }
 } catch (e) {
   console.warn('Firebase admin not configured, skipping auth middleware');

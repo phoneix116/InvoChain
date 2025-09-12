@@ -373,7 +373,7 @@ router.get('/events/:eventType', async (req, res) => {
     // Limit results
     const limitedEvents = events.slice(-parseInt(limit));
     
-    // Format events
+    // Format events (ethers v6 returns native bigint, not BigNumber)
     const formattedEvents = limitedEvents.map(event => ({
       transactionHash: event.transactionHash,
       blockNumber: event.blockNumber,
@@ -381,7 +381,7 @@ router.get('/events/:eventType', async (req, res) => {
       args: Object.keys(event.args).reduce((acc, key) => {
         if (isNaN(key)) {
           const value = event.args[key];
-          acc[key] = ethers.BigNumber.isBigNumber(value) ? value.toString() : value;
+          acc[key] = typeof value === 'bigint' ? value.toString() : value;
         }
         return acc;
       }, {}),

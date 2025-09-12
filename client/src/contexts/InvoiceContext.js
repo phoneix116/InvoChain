@@ -25,6 +25,13 @@ export const InvoiceProvider = ({ children }) => {
   const [contract, setContract] = useState(null);
   const [lastLoadTime, setLastLoadTime] = useState(0);
   const [autoVerifyAttempted, setAutoVerifyAttempted] = useState(false);
+  // Enforce on-chain execution (previous dev skip removed). If env still set, warn once.
+  const devSkipEnv = (process.env.REACT_APP_DEV_SKIP_ONCHAIN || '').toLowerCase() === 'true';
+  useEffect(() => {
+    if (devSkipEnv) {
+      console.warn('[InvoiceContext] REACT_APP_DEV_SKIP_ONCHAIN is set but skip mode is disabled. All invoices will be created on-chain. Remove the env var to silence this.');
+    }
+  }, [devSkipEnv]);
 
   // Rate limiting: prevent API calls more frequent than once per 5 seconds
   const MIN_LOAD_INTERVAL = 5000;
@@ -177,7 +184,7 @@ export const InvoiceProvider = ({ children }) => {
         throw new Error('Failed to upload PDF to IPFS');
       }
 
-      // Normalize and validate fields for on-chain call
+  // Normalize and validate fields for on-chain call (or skip when dev flag is set)
       // Due date
       const dueTimestamp = Math.floor(new Date(invoiceData.dueDate).getTime() / 1000);
       const nowSec = Math.floor(Date.now() / 1000);
@@ -219,7 +226,7 @@ export const InvoiceProvider = ({ children }) => {
         tokenAddr = ethers.constants.AddressZero;
       }
 
-      // Create invoice on blockchain
+      // Create invoice on blockchain (normal path)
       const tx = await contract.createInvoice(
         ipfsHash,
         recipientAddress,
