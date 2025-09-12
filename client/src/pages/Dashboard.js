@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { keyframes } from '@emotion/react';
 import {
   Grid,
   Card,
@@ -9,13 +10,10 @@ import {
   List,
   ListItem,
   ListItemText,
-  Chip,
   CircularProgress,
   Alert,
-  LinearProgress,
   Avatar,
   Fade,
-  Grow,
   Container,
   Divider,
 } from '@mui/material';
@@ -29,8 +27,9 @@ import {
   AttachMoney,
   Schedule,
   Visibility,
-  AutoGraph,
 } from '@mui/icons-material';
+import { KPIStat } from '../components/KPIStat';
+import { StatusChip } from '../components/StatusChip';
 import { useNavigate } from 'react-router-dom';
 import { useWallet } from '../contexts/WalletContext';
 import { useInvoice } from '../contexts/InvoiceContext';
@@ -39,7 +38,7 @@ const Dashboard = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   const { isConnected, account } = useWallet();
-  const { userInvoices, loading, loadUserInvoices, formatInvoiceStatus, getStatusColor } = useInvoice();
+  const { userInvoices, loading, loadUserInvoices } = useInvoice();
   
   const [stats, setStats] = useState({
     total: 0,
@@ -94,136 +93,29 @@ const Dashboard = () => {
     }
   }, [userInvoices]);
 
-  const StatCard = ({ title, value, icon, color = 'primary', progress, trend }) => (
-    <Grow in={true} timeout={800}>
-      <Card 
-        sx={{ 
-          height: '100%',
-          background: theme.palette.background.paper,
-          color: theme.palette.text.primary,
-          borderRadius: 3,
-          position: 'relative',
-          overflow: 'hidden',
-          border: `1px solid ${theme.palette.divider}`,
-          boxShadow: theme.palette.mode === 'dark' ? '0 10px 25px rgba(0,0,0,0.3)' : '0 10px 25px rgba(0,0,0,0.1)',
-          backdropFilter: 'blur(20px)',
-          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          '&:hover': {
-            transform: 'translateY(-8px)',
-            boxShadow: theme.palette.mode === 'dark' ? '0 20px 40px rgba(0,0,0,0.4)' : '0 20px 40px rgba(0,0,0,0.15)',
-            borderColor: theme.palette.text.secondary,
-          },
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: '2px',
-            background: `linear-gradient(90deg, transparent, ${theme.palette.text.secondary}, transparent)`,
-          }
-        }}
-      >
-        <CardContent sx={{ p: 3 }}>
-          <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-            <Typography variant="h6" sx={{ fontWeight: 600, color: theme.palette.text.primary }}>
-              {title}
-            </Typography>
-            <Avatar 
-              sx={{ 
-                bgcolor: theme.palette.mode === 'dark' ? 'rgba(148,163,184,0.15)' : 'rgba(0,0,0,0.05)', 
-                backdropFilter: 'blur(10px)',
-                width: 48, 
-                height: 48,
-                border: `1px solid ${theme.palette.divider}`,
-                color: theme.palette.text.secondary,
-                transition: 'all 0.3s ease',
-                '&:hover': {
-                  transform: 'scale(1.1)',
-                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(148,163,184,0.25)' : 'rgba(0,0,0,0.08)',
-                }
-              }}
-            >
-              {icon}
-            </Avatar>
-          </Box>
-          
-          <Typography 
-            variant="h3" 
-            component="div" 
-            sx={{ 
-              fontWeight: 700, 
-              mb: 2,
-              color: theme.palette.text.primary,
-              fontSize: { xs: '1.75rem', md: '2.25rem' }
-            }}
-          >
-            {value}
-          </Typography>
-          
-          {progress !== undefined && (
-            <Box mt={2}>
-              <LinearProgress 
-                variant="determinate" 
-                value={progress} 
-                sx={{ 
-                  height: 6, 
-                  borderRadius: 3,
-                  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(148, 163, 184, 0.2)' : 'rgba(0,0,0,0.08)',
-                  '& .MuiLinearProgress-bar': {
-                    background: theme.palette.mode === 'dark' ? 'linear-gradient(90deg, #374151 0%, #6b7280 100%)' : 'linear-gradient(90deg, #111827 0%, #374151 100%)',
-                    borderRadius: 3,
-                    boxShadow: theme.palette.mode === 'dark' ? '0 0 10px rgba(148,163,184,0.3)' : '0 0 10px rgba(0,0,0,0.15)',
-                  }
-                }} 
-              />
-              <Typography variant="caption" sx={{ color: theme.palette.text.secondary, mt: 1, display: 'block', fontWeight: 500 }}>
-                {progress.toFixed(1)}% completion
-              </Typography>
-            </Box>
-          )}
-          
-          {trend && (
-            <Box display="flex" alignItems="center" mt={2} 
-                 sx={{ 
-                   p: 1.5, 
-                   borderRadius: 2, 
-                   bgcolor: theme.palette.mode === 'dark' ? 'rgba(148, 163, 184, 0.1)' : 'rgba(0,0,0,0.02)', 
-                   backdropFilter: 'blur(10px)',
-                   border: `1px solid ${theme.palette.divider}`
-                 }}>
-              <AutoGraph sx={{ fontSize: 16, mr: 1, color: theme.palette.text.secondary }} />
-              <Typography variant="caption" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>
-                {trend}
-              </Typography>
-            </Box>
-          )}
-        </CardContent>
-      </Card>
-    </Grow>
-  );
+  // Replaced legacy StatCard with shared KPIStat component
 
   if (!isConnected) {
+    const darkGradient = 'linear-gradient(135deg, #0a0e27 0%, #1a1d3a 25%, #2d3561 50%, #3b4371 75%, #4a5282 100%)';
+    const lightGradient = 'linear-gradient(135deg, #ffffff 0%, #f1f5f9 50%, #ffffff 100%)';
     return (
-      <Box 
-        sx={{ 
+      <Box
+        sx={{
           minHeight: '100vh',
-          background: theme.palette.mode === 'dark' ? 'linear-gradient(135deg, #0a0e27 0%, #1a1d3a 25%, #2d3561 50%, #3b4371 75%, #4a5282 100%)' : theme.palette.background.default,
+          background: theme.palette.mode === 'dark' ? darkGradient : lightGradient,
           position: 'relative',
-          '&::before': {
+          '&::before': theme.palette.mode === 'dark' ? {
             content: '""',
             position: 'absolute',
             top: 0,
             left: 0,
             right: 0,
             bottom: 0,
-            background: theme.palette.mode === 'dark' ? `
-              radial-gradient(circle at 20% 80%, rgba(148,163,184, 0.08) 0%, transparent 50%),
+            background: `radial-gradient(circle at 20% 80%, rgba(148,163,184, 0.08) 0%, transparent 50%),
               radial-gradient(circle at 80% 20%, rgba(148,163,184, 0.06) 0%, transparent 50%),
-              radial-gradient(circle at 40% 40%, rgba(148,163,184, 0.04) 0%, transparent 50%)
-            ` : 'none',
-            pointerEvents: 'none',
-          }
+              radial-gradient(circle at 40% 40%, rgba(148,163,184, 0.04) 0%, transparent 50%)`,
+            pointerEvents: 'none'
+          } : undefined,
         }}
       >
         <Container maxWidth="xl" sx={{ position: 'relative', zIndex: 1 }}>
@@ -244,7 +136,7 @@ const Dashboard = () => {
                   mb: 4,
                   backdropFilter: 'blur(20px)',
                   border: `1px solid ${theme.palette.divider}`,
-                  boxShadow: theme.palette.mode === 'dark' ? '0 25px 50px rgba(0, 0, 0, 0.25)' : '0 25px 50px rgba(0, 0, 0, 0.1)',
+                  boxShadow: theme.palette.mode === 'dark' ? '0 25px 50px rgba(0, 0, 0, 0.25)' : '0 10px 30px rgba(0,0,0,0.08)',
                   position: 'relative',
                   overflow: 'hidden',
                   '&::before': {
@@ -302,29 +194,34 @@ const Dashboard = () => {
     );
   }
 
+  // Animation keyframes (formal subtle)
+  const fadeInScale = keyframes`0%{opacity:0;transform:translateY(18px) scale(.965);}100%{opacity:1;transform:translateY(0) scale(1);}`;
+  const fadeInUp = keyframes`0%{opacity:0;transform:translateY(14px);}100%{opacity:1;transform:translateY(0);}`;
+  const listItemFade = keyframes`0%{opacity:0;transform:translateY(6px);}100%{opacity:1;transform:translateY(0);}`;
+
   return (
-    <Box 
-      sx={{ 
-        minHeight: '100vh',
-        background: theme.palette.mode === 'dark' ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)' : theme.palette.background.default,
-        position: 'relative',
-      }}
-    >
+  <Box sx={{ minHeight: '100vh', background: 'transparent', position: 'relative' }}>
     <Container maxWidth="xl" sx={{ pt: 3, position: 'relative', zIndex: 1 }}>
       {/* Header Section */}
-      <Fade in={true} timeout={600}>
-        <Box 
+  <Box 
           sx={{
-            background: 'linear-gradient(145deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
+            // Professional narrower header (decoupled from extreme bleed of rest of content)
+            ml: { xs: -5, sm: -7, md: -9, lg: -10, xl: -11 },
+            mr: { xs: 'auto', md: 'auto' },
+            maxWidth: { xs: '100%', xl: 1280 }, // clamp overall width
+            background: theme.palette.mode === 'dark'
+              ? 'linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.045) 100%)'
+              : theme.palette.background.paper,
             borderRadius: 3,
-            p: 4,
-            mb: 4,
-            color: 'white',
+            p: { xs: 2, md: 3 }, // reduced overall padding to lower height
+            mb: 3,
+            color: theme.palette.text.primary,
             position: 'relative',
             overflow: 'hidden',
-            backdropFilter: 'blur(20px)',
-            border: '1px solid rgba(148, 163, 184, 0.2)',
-            boxShadow: '0 25px 50px rgba(0, 0, 0, 0.25)',
+            backdropFilter: 'blur(26px) saturate(120%)',
+            WebkitBackdropFilter: 'blur(26px) saturate(120%)',
+            border: `1px solid ${theme.palette.divider}`,
+            boxShadow: theme.palette.mode === 'dark' ? '0 20px 45px rgba(0,0,0,0.35)' : '0 10px 30px rgba(0,0,0,0.08)',
             '&::before': {
               content: '""',
               position: 'absolute',
@@ -332,136 +229,150 @@ const Dashboard = () => {
               left: 0,
               right: 0,
               height: '1px',
-              background: 'linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.5), transparent)',
+              background: theme.palette.mode === 'dark'
+                ? 'linear-gradient(90deg, transparent, rgba(148,163,184,0.35), transparent)'
+                : `linear-gradient(90deg, transparent, ${theme.palette.divider}, transparent)`
             },
             '&::after': {
               content: '""',
               position: 'absolute',
-              top: '50%',
-              right: -50,
-              width: 100,
-              height: 100,
-              background: 'radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%)',
-              borderRadius: '50%',
-              opacity: 0.6,
-            }
+              inset: 0,
+              background: theme.palette.mode === 'dark'
+                ? 'radial-gradient(circle at 85% 25%, rgba(148,163,184,0.10) 0%, transparent 60%)'
+                : 'radial-gradient(circle at 85% 25%, rgba(0,0,0,0.04) 0%, transparent 60%)',
+              pointerEvents: 'none'
+            },
+            opacity: 0,
+            animation: `${fadeInScale} .7s cubic-bezier(.16,.8,.24,1) forwards`
           }}
         >
-          <Box display="flex" justifyContent="space-between" alignItems="center" position="relative" zIndex={1}>
-            <Box>
+          <Box 
+            display="flex" 
+            flexDirection={{ xs: 'column', md: 'row' }} 
+            justifyContent="space-between" 
+            alignItems={{ xs: 'flex-start', md: 'center' }} 
+            gap={3}
+            position="relative" 
+            zIndex={1}
+          >
+            <Box maxWidth={720} pr={{ md: 2 }}>
               <Typography 
                 variant="h2" 
                 component="h1" 
                 sx={{ 
-                  fontWeight: 700, 
-                  mb: 2,
-                  color: '#f8fafc',
-                  fontSize: { xs: '2rem', md: '2.5rem' },
-                  letterSpacing: '-0.025em',
+                  fontWeight: 700,
+                  mb: 1.2, // slightly tighter
+                  color: theme.palette.mode === 'dark' ? '#f8fafc' : theme.palette.text.primary,
+                  fontSize: { xs: '1.85rem', md: '2.3rem' }, // slightly smaller
+                  letterSpacing: '-0.03em',
+                  lineHeight: 1.12, // reduced line height
+                  textWrap: 'balance'
                 }}
               >
-                Welcome back! �
+                Welcome back! 👋
               </Typography>
               <Typography 
                 variant="h6" 
                 sx={{ 
-                  color: '#94a3b8',
+                  color: theme.palette.text.secondary,
                   fontWeight: 400,
-                  lineHeight: 1.6
+                  lineHeight: 1.4, // slightly tighter
+                  fontSize: { xs: '0.92rem', md: '1.02rem' },
+                  maxWidth: 600
                 }}
               >
-                Manage your blockchain invoices with style ✨
+                Manage your blockchain invoices with style ✨ — create, track and analyze invoices seamlessly on-chain.
               </Typography>
             </Box>
-            <Button
-              variant="contained"
-              startIcon={<Add />}
-              onClick={() => navigate('/create')}
-              size="large"
-              sx={{
-                backgroundColor: 'white',
-                color: '#0f172a',
-                borderRadius: 2,
-                px: 3,
-                py: 1.5,
-                fontSize: '1rem',
-                fontWeight: 600,
-                textTransform: 'none',
-                boxShadow: '0 8px 25px rgba(255, 255, 255, 0.3)',
-                '&:hover': {
-                  backgroundColor: '#f8fafc',
-                  transform: 'translateY(-2px)',
-                  boxShadow: '0 12px 30px rgba(255, 255, 255, 0.4)',
-                },
-                transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-              }}
-            >
-              Create Invoice
-            </Button>
+            <Box display="flex" alignItems="center" justifyContent="flex-start" flexShrink={0}>
+              <Button
+                variant="contained"
+                startIcon={<Add />}
+                onClick={() => navigate('/create')}
+                size="large"
+                sx={{
+                  backgroundColor: theme.palette.mode === 'dark' ? 'white' : theme.palette.primary.main,
+                  color: theme.palette.mode === 'dark' ? '#0f172a' : theme.palette.primary.contrastText,
+                  borderRadius: 2.5,
+                  px: 3.25,
+                  py: 1.3, // reduced vertical padding
+                  fontSize: '1rem',
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  boxShadow: theme.palette.mode === 'dark' ? '0 10px 28px rgba(255,255,255,0.25)' : '0 8px 20px rgba(0,0,0,0.12)',
+                  '&:hover': {
+                    backgroundColor: theme.palette.mode === 'dark' ? '#f1f5f9' : theme.palette.primary.light,
+                    transform: 'translateY(-2px)',
+                    boxShadow: theme.palette.mode === 'dark' ? '0 14px 34px rgba(255,255,255,0.35)' : '0 12px 28px rgba(0,0,0,0.18)',
+                  },
+                  transition: 'all 0.35s cubic-bezier(.16,.8,.24,1)'
+                }}
+              >
+                Create Invoice
+              </Button>
+            </Box>
           </Box>
-        </Box>
-      </Fade>
+  </Box>
 
-      {/* Statistics Cards */}
-      <Grid container spacing={3} mb={4}>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Total Invoices"
-            value={stats.total}
-            icon={<Receipt />}
-            color="primary"
-            progress={stats.total > 0 ? 100 : 0}
-            trend={`${stats.total} invoices created`}
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Paid"
-            value={stats.paid}
-            icon={<CheckCircle />}
-            color="success"
-            progress={stats.total > 0 ? (stats.paid / stats.total) * 100 : 0}
-            trend={`${stats.total > 0 ? ((stats.paid / stats.total) * 100).toFixed(1) : 0}% completion rate`}
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Pending"
-            value={stats.pending}
-            icon={<Schedule />}
-            color="warning"
-            progress={stats.total > 0 ? (stats.pending / stats.total) * 100 : 0}
-            trend={`${stats.pending} awaiting payment`}
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Total Earned"
-            value={`${stats.totalAmount.toFixed(3)} ETH`}
-            icon={<AttachMoney />}
-            color="info"
-            trend={`≈ $${(stats.totalAmount * 2000).toFixed(2)} USD`}
-          />
-        </Grid>
+  {/* Statistics Cards */}
+  <Grid
+    container
+    spacing={0.75}
+    mb={4}
+    alignItems="stretch"
+    sx={{
+      mt: -0.5,
+      ml: { xs: -11, sm: -14, md: -17, lg: -20, xl: -22 }, // even more left bleed
+      width: {
+        xs: 'calc(100% + 88px)',  // 11 * 8
+        sm: 'calc(100% + 112px)', // 14 * 8
+        md: 'calc(100% + 136px)', // 17 * 8
+        lg: 'calc(100% + 160px)', // 20 * 8
+        xl: 'calc(100% + 176px)'  // 22 * 8
+      },
+      pr: 0,
+      overflow: 'hidden'
+    }}
+  >
+        {[{
+          icon: <Receipt />, label: 'Total Invoices', value: stats.total, color: 'primary'
+        }, {
+          icon: <CheckCircle />, label: 'Paid', value: stats.paid, color: 'success', delta: stats.total > 0 ? (stats.paid / stats.total) * 100 : 0
+        }, {
+          icon: <Schedule />, label: 'Pending', value: stats.pending, color: 'warning', delta: stats.total > 0 ? (stats.pending / stats.total) * 100 : 0
+        }, {
+          icon: <AttachMoney />, label: 'Total Earned (ETH)', value: stats.totalAmount.toFixed(3), color: 'info'
+        }].map((card, i) => (
+          <Grid key={card.label} item xs={12} sm={6} md={3} sx={{ display: 'flex', opacity: 0, animation: `${fadeInUp} .55s ease forwards`, animationDelay: `${0.12 * i + 0.15}s` }}>
+            <KPIStat {...card} />
+          </Grid>
+        ))}
       </Grid>
 
-      {/* Recent Activity & Quick Actions */}
-      <Grid container spacing={3}>
+      {/* Main Cards Row: Recent Invoices / Quick Actions / Account Summary */}
+  <Grid container spacing={2.5} alignItems="stretch" sx={{ mb: 4, ml: { xs: -12, sm: -16, md: -20, lg: -22, xl: -24 }, width: { xs: 'calc(100% + 96px)', sm: 'calc(100% + 128px)', md: 'calc(100% + 160px)', lg: 'calc(100% + 176px)', xl: 'calc(100% + 192px)' } }}> {/* maximized left bleed; very tight gap */}
         {/* Recent Invoices */}
-        <Grid item xs={12} md={8}>
-          <Fade in={true} timeout={1000}>
-            <Card 
-              sx={{ 
+  <Grid item xs={12} md={5} sx={{ display: 'flex' }}> {/* adjusted to free space for wider Account Summary */}
+          <Card
+              sx={{
                 borderRadius: 3,
-                background: 'linear-gradient(145deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
-                boxShadow: '0 25px 50px rgba(0, 0, 0, 0.25)',
-                border: '1px solid rgba(148, 163, 184, 0.2)',
+                background: theme.palette.mode === 'dark'
+                  ? 'linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.045) 100%)'
+                  : theme.palette.background.paper,
+                boxShadow: theme.palette.mode === 'dark'
+                  ? '0 25px 50px rgba(0, 0, 0, 0.35)'
+                  : '0 8px 24px rgba(0,0,0,0.08)',
+                border: `1px solid ${theme.palette.divider}`,
                 transition: 'all 0.3s ease-in-out',
                 position: 'relative',
                 overflow: 'hidden',
-                backdropFilter: 'blur(20px)',
+                backdropFilter: 'blur(26px) saturate(120%)',
+                WebkitBackdropFilter: 'blur(26px) saturate(120%)',
+                height: { md: 340 },
                 '&:hover': {
-                  boxShadow: '0 35px 70px rgba(59, 130, 246, 0.15)',
+                  boxShadow: theme.palette.mode === 'dark'
+                    ? '0 35px 70px rgba(59, 130, 246, 0.15)'
+                    : '0 16px 40px rgba(0,0,0,0.12)',
                   transform: 'translateY(-2px)',
                 },
                 '&::before': {
@@ -471,22 +382,32 @@ const Dashboard = () => {
                   left: 0,
                   right: 0,
                   height: '2px',
-                  background: 'linear-gradient(90deg, transparent, #3b82f6, transparent)',
-                }
+                  background: theme.palette.mode === 'dark'
+                    ? 'linear-gradient(90deg, transparent, rgba(148,163,184,0.35), transparent)'
+                    : `linear-gradient(90deg, transparent, ${theme.palette.divider}, transparent)`,
+                },
+                opacity: 0,
+                animation: `${fadeInScale} .7s cubic-bezier(.16,.8,.24,1) forwards`,
+                animationDelay: '0.55s',
+                display: 'flex',
+                flexDirection: 'column',
+                flex: 1
               }}
             >
-              <CardContent sx={{ p: 3 }}>
-                <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+              <CardContent sx={{ p: 2.25, display: 'flex', flexDirection: 'column', height: '100%' }}>
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                   <Box display="flex" alignItems="center">
                     <Avatar 
                       sx={{ 
-                        background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(99, 102, 241, 0.2) 100%)',
+                        background: theme.palette.mode === 'dark'
+                          ? 'rgba(148,163,184,0.14)'
+                          : theme.palette.action.hover,
                         mr: 2, 
-                        width: 48, 
-                        height: 48,
-                        boxShadow: '0 8px 25px rgba(59, 130, 246, 0.15)',
-                        border: '1px solid rgba(59, 130, 246, 0.3)',
-                        color: '#3b82f6'
+                        width: 40, 
+                        height: 40,
+                        boxShadow: theme.palette.mode === 'dark' ? '0 8px 25px rgba(148,163,184, 0.20)' : '0 2px 6px rgba(0,0,0,0.12)',
+                        border: `1px solid ${theme.palette.divider}`,
+                        color: theme.palette.mode === 'dark' ? theme.palette.text.secondary : theme.palette.text.secondary
                       }}
                     >
                       <Receipt />
@@ -496,7 +417,7 @@ const Dashboard = () => {
                       component="h2" 
                       sx={{ 
                         fontWeight: 700,
-                        color: '#f8fafc',
+                        color: theme.palette.text.primary,
                         fontSize: { xs: '1.25rem', md: '1.5rem' }
                       }}
                     >
@@ -510,12 +431,12 @@ const Dashboard = () => {
                     onClick={() => navigate('/invoices')}
                     sx={{ 
                       borderRadius: 2,
-                      borderColor: 'rgba(59, 130, 246, 0.5)',
-                      color: '#3b82f6',
+                      borderColor: theme.palette.mode === 'dark' ? 'rgba(148, 163, 184, 0.5)' : theme.palette.divider,
+                      color: theme.palette.text.secondary,
                       '&:hover': {
-                        borderColor: '#3b82f6',
-                        bgcolor: 'rgba(59, 130, 246, 0.1)',
-                        transform: 'scale(1.05)',
+                        borderColor: theme.palette.mode === 'dark' ? 'rgba(148,163,184,0.8)' : theme.palette.text.primary,
+                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(148, 163, 184, 0.10)' : theme.palette.action.hover,
+                        transform: 'scale(1.05)'
                       },
                       transition: 'all 0.3s ease'
                     }}
@@ -529,22 +450,44 @@ const Dashboard = () => {
                   <CircularProgress />
                 </Box>
               ) : userInvoices.length === 0 ? (
-                <Alert 
+                <Alert
                   severity="info"
                   sx={{
-                    bgcolor: 'rgba(59, 130, 246, 0.1)',
-                    border: '1px solid rgba(59, 130, 246, 0.2)',
-                    color: '#3b82f6',
-                    '& .MuiAlert-icon': {
-                      color: '#3b82f6'
-                    }
+                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(148,163,184,0.10)' : theme.palette.action.hover,
+                    border: `1px solid ${theme.palette.divider}`,
+                    color: theme.palette.text.secondary,
+                    '& .MuiAlert-icon': { color: theme.palette.text.secondary }
                   }}
                 >
                   No invoices found. Create your first invoice to get started!
                 </Alert>
               ) : (
-                <List sx={{ bgcolor: 'transparent' }}>
-          {userInvoices.slice(0, 5).map((invoice) => (
+        <Box sx={{
+          flex: 1,
+          overflowY: 'auto',
+          pr: 0.5,
+          ...(theme.palette.mode === 'dark'
+            ? {
+                scrollbarWidth: 'thin',
+                scrollbarColor: 'rgba(148,163,184,0.38) transparent', // Firefox
+                '&::-webkit-scrollbar': { width: 10, height: 10 },
+                '&::-webkit-scrollbar-track': {
+                  background: 'transparent',
+                },
+                '&::-webkit-scrollbar-thumb': {
+                  background: 'linear-gradient(180deg, rgba(148,163,184,0.50) 0%, rgba(148,163,184,0.28) 100%)',
+                  borderRadius: 10,
+                  border: '1px solid rgba(15,23,42,0.6)',
+                  boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.06)'
+                },
+                '&::-webkit-scrollbar-thumb:hover': {
+                  background: 'linear-gradient(180deg, rgba(148,163,184,0.65) 0%, rgba(148,163,184,0.4) 100%)'
+                }
+              }
+            : {})
+        }}>
+          <List sx={{ bgcolor: 'transparent', pt: 0 }}>
+      {userInvoices.slice(0, 5).map((invoice, idx) => ( // restored count for original height
                     <ListItem
             key={invoice.id || invoice.invoiceId || invoice._id}
                       button
@@ -552,8 +495,11 @@ const Dashboard = () => {
                       divider
                       sx={{
                         borderColor: 'rgba(148, 163, 184, 0.2)',
+                        opacity: 0,
+                        animation: `${listItemFade} .5s ease forwards`,
+                        animationDelay: `${0.05 * idx + 0.9}s`,
                         '&:hover': {
-                          bgcolor: 'rgba(59, 130, 246, 0.1)',
+                          bgcolor: 'rgba(148, 163, 184, 0.10)',
                         },
                         '&.MuiListItem-button': {
                           borderRadius: 2,
@@ -564,31 +510,27 @@ const Dashboard = () => {
                       <ListItemText
                         primary={
                           <Box display="flex" justifyContent="space-between" alignItems="center">
-                            <Typography variant="subtitle1" sx={{ color: '#f8fafc', fontWeight: 600 }}>
+                            <Typography variant="subtitle1" sx={{ color: theme.palette.text.primary, fontWeight: 600 }}>
                               Invoice #{invoice.id || invoice.invoiceId}
                             </Typography>
-                            <Chip
-                              label={formatInvoiceStatus(invoice.status)}
-                              color={getStatusColor(invoice.status)}
-                              size="small"
-                            />
+                            <StatusChip status={invoice.status} size="small" />
                           </Box>
                         }
                         secondary={
                           <Box>
-                            <Typography variant="body2" sx={{ color: '#94a3b8' }}>
+                            <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
                               {(() => {
                                 const val = typeof invoice.amount === 'object' ? parseFloat(invoice.amount.toString()) : parseFloat(invoice.amount);
                                 const isWeiLike = !isNaN(val) && val > 1e12; // heuristic
                                 const eth = isWeiLike ? (val / 1e18) : val;
                                 return (
                                   <span>
-                                    Amount: <span style={{ color: '#22c55e', fontWeight: 600 }}>{(eth || 0).toFixed(4)} ETH</span>
+                                    Amount: <span style={{ color: theme.palette.success.main, fontWeight: 600 }}>{(eth || 0).toFixed(4)} ETH</span>
                                   </span>
                                 );
                               })()}
                             </Typography>
-                            <Typography variant="body2" sx={{ color: '#94a3b8' }}>
+                            <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
                               Due: {new Date(invoice.dueDate).toLocaleDateString()}
                             </Typography>
                           </Box>
@@ -596,24 +538,27 @@ const Dashboard = () => {
                       />
                     </ListItem>
                   ))}
-                </List>
+          </List>
+        </Box>
               )}
             </CardContent>
           </Card>
-          </Fade>
         </Grid>
 
-        {/* Quick Actions */}
-        <Grid item xs={12} md={4}>
-          <Box display="flex" flexDirection="column" gap={3} height="100%">
-            <Card 
+    {/* Quick Actions */}
+  <Grid item xs={12} md={3} sx={{ display: 'flex' }}> {/* Quick Actions height matches siblings */}
+          <Card
               sx={{
-                background: 'linear-gradient(145deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
+                background: theme.palette.mode === 'dark'
+                  ? 'linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.045) 100%)'
+                  : theme.palette.background.paper,
                 borderRadius: 3,
-                border: '1px solid rgba(148, 163, 184, 0.2)',
-                boxShadow: '0 25px 50px rgba(0, 0, 0, 0.25)',
-                backdropFilter: 'blur(20px)',
+                border: `1px solid ${theme.palette.divider}`,
+                boxShadow: theme.palette.mode === 'dark' ? '0 25px 50px rgba(0,0,0,0.25)' : '0 8px 24px rgba(0,0,0,0.08)',
+                backdropFilter: 'blur(26px) saturate(120%)',
+                WebkitBackdropFilter: 'blur(26px) saturate(120%)',
                 position: 'relative',
+                  height: { md: 340 },
                 '&::before': {
                   content: '""',
                   position: 'absolute',
@@ -621,32 +566,44 @@ const Dashboard = () => {
                   left: 0,
                   right: 0,
                   height: '2px',
-                  background: 'linear-gradient(90deg, transparent, #3b82f6, transparent)',
-                }
+                  background: theme.palette.mode === 'dark'
+                    ? 'linear-gradient(90deg, transparent, rgba(148,163,184,0.35), transparent)'
+                    : `linear-gradient(90deg, transparent, ${theme.palette.divider}, transparent)`
+                },
+                opacity: 0,
+                animation: `${fadeInScale} .7s cubic-bezier(.16,.8,.24,1) forwards`,
+                animationDelay: '0.65s',
+                display: 'flex',
+                flexDirection: 'column',
+                flex: 1, // stretch to match neighboring card heights
               }}
             >
-              <CardContent sx={{ p: 3 }}>
-                <Typography variant="h6" component="h2" gutterBottom sx={{ color: '#f8fafc', fontWeight: 600, mb: 3 }}>
+              <CardContent sx={{ p: 2.25, pb: 2.5, display: 'flex', flexDirection: 'column', flex: 1 }}> {/* compact height */}
+                <Typography variant="h6" component="h2" sx={{ color: theme.palette.text.primary, fontWeight: 600, mb: 1.25 }}>
                   Quick Actions
                 </Typography>
-                <Box display="flex" flexDirection="column" gap={2}>
+                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
+                  Common tasks at a glance.
+                </Typography>
+                <Box display="flex" flexDirection="column" gap={1.5}> {/* action buttons */}
                   <Button
                     variant="contained"
                     fullWidth
                     startIcon={<Add />}
                     onClick={() => navigate('/create')}
                     sx={{
-                      bgcolor: 'rgba(59, 130, 246, 0.9)',
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(203,213,225,0.12)' : theme.palette.primary.main,
                       '&:hover': { 
-                        bgcolor: '#3b82f6',
+                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(203,213,225,0.2)' : theme.palette.primary.dark,
                         transform: 'translateY(-1px)',
-                        boxShadow: '0 8px 25px rgba(59, 130, 246, 0.3)'
+                        boxShadow: theme.palette.mode === 'dark' ? '0 8px 25px rgba(148,163,184,0.25)' : '0 6px 18px rgba(0,0,0,0.15)'
                       },
                       borderRadius: 2,
                       textTransform: 'none',
                       fontWeight: 600,
                       py: 1.5,
-                      transition: 'all 0.3s ease'
+                      transition: 'all 0.3s ease',
+                      color: theme.palette.mode === 'dark' ? theme.palette.text.primary : undefined
                     }}
                   >
                     Create New Invoice
@@ -657,12 +614,12 @@ const Dashboard = () => {
                     startIcon={<Receipt />}
                     onClick={() => navigate('/invoices')}
                     sx={{
-                      borderColor: 'rgba(148, 163, 184, 0.3)',
-                      color: '#94a3b8',
+                      borderColor: theme.palette.divider,
+                      color: theme.palette.text.secondary,
                       '&:hover': {
-                        borderColor: '#3b82f6',
-                        color: '#3b82f6',
-                        bgcolor: 'rgba(59, 130, 246, 0.1)',
+                        borderColor: theme.palette.mode === 'dark' ? 'rgba(148,163,184,0.7)' : theme.palette.text.primary,
+                        color: theme.palette.mode === 'dark' ? theme.palette.text.primary : theme.palette.text.primary,
+                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(148,163,184,0.10)' : theme.palette.action.hover,
                         transform: 'translateY(-1px)'
                       },
                       borderRadius: 2,
@@ -680,12 +637,12 @@ const Dashboard = () => {
                     startIcon={<TrendingUp />}
                     onClick={() => navigate('/analytics')}
                     sx={{
-                      borderColor: 'rgba(148, 163, 184, 0.3)',
-                      color: '#94a3b8',
+                      borderColor: theme.palette.divider,
+                      color: theme.palette.text.secondary,
                       '&:hover': {
-                        borderColor: '#3b82f6',
-                        color: '#3b82f6',
-                        bgcolor: 'rgba(59, 130, 246, 0.1)',
+                        borderColor: theme.palette.mode === 'dark' ? 'rgba(148,163,184,0.7)' : theme.palette.text.primary,
+                        color: theme.palette.mode === 'dark' ? theme.palette.text.primary : theme.palette.text.primary,
+                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(148,163,184,0.10)' : theme.palette.action.hover,
                         transform: 'translateY(-1px)'
                       },
                       borderRadius: 2,
@@ -698,19 +655,26 @@ const Dashboard = () => {
                     View Analytics
                   </Button>
                 </Box>
+                <Box sx={{ flexGrow: 1 }} /> {/* spacer keeps actions top-aligned while filling height */}
               </CardContent>
-            </Card>
+          </Card>
+        </Grid>
 
-            {/* Account Info */}
-            <Card 
-              sx={{ 
-                background: 'linear-gradient(145deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
+        {/* Account Summary */}
+  <Grid item xs={12} md={4} sx={{ display: 'flex' }}> {/* widened Account Summary card */}
+          <Card
+              sx={{
+                background: theme.palette.mode === 'dark'
+                  ? 'linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.045) 100%)'
+                  : theme.palette.background.paper,
                 borderRadius: 3,
-                border: '1px solid rgba(148, 163, 184, 0.2)',
-                boxShadow: '0 25px 50px rgba(0, 0, 0, 0.25)',
-                backdropFilter: 'blur(20px)',
+                border: `1px solid ${theme.palette.divider}`,
+                boxShadow: theme.palette.mode === 'dark' ? '0 25px 50px rgba(0,0,0,0.25)' : '0 8px 24px rgba(0,0,0,0.08)',
+                backdropFilter: 'blur(26px) saturate(120%)',
+                WebkitBackdropFilter: 'blur(26px) saturate(120%)',
                 position: 'relative',
                 flex: 1,
+                  height: { md: 340 },
                 '&::before': {
                   content: '""',
                   position: 'absolute',
@@ -718,55 +682,62 @@ const Dashboard = () => {
                   left: 0,
                   right: 0,
                   height: '2px',
-                  background: 'linear-gradient(90deg, transparent, #22c55e, transparent)',
-                }
+                  background: theme.palette.mode === 'dark'
+                    ? 'linear-gradient(90deg, transparent, rgba(148,163,184,0.35), transparent)'
+                    : `linear-gradient(90deg, transparent, ${theme.palette.divider}, transparent)`
+                },
+                opacity: 0,
+                animation: `${fadeInScale} .7s cubic-bezier(.16,.8,.24,1) forwards`,
+                animationDelay: '0.75s',
+                display: 'flex',
+                flexDirection: 'column'
               }}
             >
-              <CardContent sx={{ p: 3 }}>
-                <Typography variant="h6" component="h2" gutterBottom sx={{ color: '#f8fafc', fontWeight: 600, mb: 3 }}>
+              <CardContent sx={{ p: 2.25 }}> {/* compact padding */}
+                <Typography variant="h6" component="h2" gutterBottom sx={{ color: theme.palette.text.primary, fontWeight: 600, mb: 3 }}>
                   Account Summary
                 </Typography>
-                <Box display="flex" flexDirection="column" gap={2}>
+                <Box display="flex" flexDirection="column" gap={2}> {/* restored gaps */}
                   <Box>
-                    <Typography variant="body2" sx={{ color: '#94a3b8', mb: 1 }}>
+          <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 1 }}>
                       Connected Address
                     </Typography>
                     <Typography 
                       variant="body2" 
                       sx={{ 
-                        color: '#f8fafc', 
+            color: theme.palette.text.primary, 
                         fontFamily: 'monospace',
                         fontSize: '0.75rem',
                         wordBreak: 'break-all',
-                        bgcolor: 'rgba(15, 23, 42, 0.8)',
+            bgcolor: theme.palette.mode === 'dark' ? 'rgba(17, 24, 39, 0.80)' : theme.palette.action.hover,
                         p: 1.5,
                         borderRadius: 1,
-                        border: '1px solid rgba(148, 163, 184, 0.2)'
+            border: `1px solid ${theme.palette.divider}`
                       }}
                     >
                       {account}
                     </Typography>
                   </Box>
                   
-                  <Divider sx={{ borderColor: 'rgba(148, 163, 184, 0.2)', my: 1 }} />
+          <Divider sx={{ borderColor: theme.palette.divider, my: 1 }} />
                   
                   <Box display="flex" justifyContent="space-between" alignItems="center">
-                    <Typography variant="body2" sx={{ color: '#94a3b8' }}>
+          <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
                       Total Invoices
                     </Typography>
-                    <Typography variant="h6" sx={{ color: '#3b82f6', fontWeight: 600 }}>
+          <Typography variant="h6" sx={{ color: theme.palette.text.primary, fontWeight: 600 }}>
                       {stats.total}
                     </Typography>
                   </Box>
                   
                   <Box display="flex" justifyContent="space-between" alignItems="center">
-                    <Typography variant="body2" sx={{ color: '#94a3b8' }}>
+          <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
                       Success Rate
                     </Typography>
                     <Typography 
                       variant="h6" 
                       sx={{ 
-                        color: stats.total > 0 && stats.paid > 0 ? '#22c55e' : '#94a3b8', 
+                        color: stats.total > 0 && stats.paid > 0 ? theme.palette.success.main : theme.palette.text.secondary, 
                         fontWeight: 600 
                       }}
                     >
@@ -775,17 +746,16 @@ const Dashboard = () => {
                   </Box>
                   
                   <Box display="flex" justifyContent="space-between" alignItems="center">
-                    <Typography variant="body2" sx={{ color: '#94a3b8' }}>
+          <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
                       Total Earned
                     </Typography>
-                    <Typography variant="h6" sx={{ color: '#f59e0b', fontWeight: 600 }}>
+          <Typography variant="h6" sx={{ color: theme.palette.warning.main, fontWeight: 600 }}>
                       {stats.totalAmount.toFixed(3)} ETH
                     </Typography>
                   </Box>
                 </Box>
               </CardContent>
-            </Card>
-          </Box>
+          </Card>
         </Grid>
       </Grid>
     </Container>

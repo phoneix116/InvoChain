@@ -23,14 +23,8 @@ const Settings = () => {
   const { mode, toggle } = useThemeMode();
 
   return (
-    <Box 
-      sx={{
-        minHeight: '100vh',
-        background: theme.palette.mode === 'dark' ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)' : theme.palette.background.default,
-        p: 3
-      }}
-    >
-      <Container maxWidth="lg">
+  <Box sx={{ minHeight: '100vh', background: 'transparent', pt: 3, pr: 3, pb: 0, pl: 0 }}>
+      <Container maxWidth={false} disableGutters sx={{ px: 0 }}>
         <Typography 
           variant="h4" 
           component="h1" 
@@ -39,7 +33,7 @@ const Settings = () => {
             color: theme.palette.text.primary, 
             fontWeight: 700,
             mb: 2,
-            textAlign: 'center',
+            textAlign: 'left',
             letterSpacing: '-0.015em'
           }}
         >
@@ -48,12 +42,12 @@ const Settings = () => {
         
         {/* Theme Mode Toggle Card */}
         <Card sx={{ 
-          background: theme.palette.background.paper, 
+          background: theme.palette.mode === 'dark' ? 'linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.045) 100%)' : theme.palette.background.paper, 
           border: `1px solid ${theme.palette.divider}`,
-          mb: 3,
+          mb: 0.5, // reduce space below the card
           borderRadius: 3
         }}>
-          <CardContent>
+          <CardContent sx={{ pb: 1.25 }}> {/* tighten bottom padding */}
             <Box display="flex" justifyContent="space-between" alignItems="center">
               <Box>
                 <Typography variant="h6" sx={{ color: theme.palette.text.primary, fontWeight: 600 }}>
@@ -83,48 +77,55 @@ const Settings = () => {
             </Box>
           </CardContent>
         </Card>
-        
-  <Alert 
-          severity="info"
-          sx={{
-            bgcolor: theme.palette.mode === 'dark' ? 'rgba(148, 163, 184, 0.08)' : 'rgba(0,0,0,0.02)',
-            border: `1px solid ${theme.palette.divider}`,
-            color: theme.palette.text.primary,
-            borderRadius: 2,
-            '& .MuiAlert-icon': {
-              color: theme.palette.text.secondary
-            },
-            '& ul': {
-              color: theme.palette.text.secondary,
-              mt: 1
-            },
-            '& li': {
-              mb: 0.5
-            }
-          }}
-        >
-          <Typography variant="body1" sx={{ color: theme.palette.text.primary, fontWeight: 600, mb: 2 }}>
-            Settings configuration panel coming soon!
-          </Typography>
-          <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 1 }}>
-            This settings panel will provide comprehensive control over:
-          </Typography>
-          <ul>
-            <li>Custom invoice templates and branding options</li>
-            <li>Email and push notification preferences</li>
-            <li>Multiple payment gateway integrations</li>
-            <li>Tax rates and calculation configurations</li>
-            <li>Personal account and security preferences</li>
-            <li>Data export and backup settings</li>
-          </ul>
-        </Alert>
+    {/* Alert + Profile side-by-side */}
+  <Grid container spacing={2} sx={{ mt: 0 }} alignItems="stretch"> {/* reduce gap to next section */}
+      <Grid item xs={5} sm={2} md={6}>
+            <Alert 
+              severity="info"
+              sx={{
+        py: 1, // equal vertical padding reduction
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'flex-start',
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(148, 163, 184, 0.08)' : 'rgba(0,0,0,0.02)',
+                border: `1px solid ${theme.palette.divider}`,
+                color: theme.palette.text.primary,
+                borderRadius: 2,
+                '& .MuiAlert-icon': {
+                  color: theme.palette.text.secondary
+                },
+                '& ul': {
+                  color: theme.palette.text.secondary,
+                  mt: 1
+                },
+                '& li': {
+                  mb: 0.5
+                }
+              }}
+            >
+              <Typography variant="body1" sx={{ color: theme.palette.text.primary, fontWeight: 600, mb: 2 }}>
+                Settings configuration panel coming soon!
+              </Typography>
+              <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 1 }}>
+                This settings panel will provide comprehensive control over:
+              </Typography>
+              <ul>
+                <li>Custom invoice templates and branding options</li>
+                <li>Email and push notification preferences</li>
+                <li>Multiple payment gateway integrations</li>
+                <li>Tax rates and calculation configurations</li>
+                <li>Personal account and security preferences</li>
+                <li>Data export and backup settings</li>
+              </ul>
+            </Alert>
+          </Grid>
 
-        {/* Profile Card */}
-        <Grid container spacing={3} sx={{ mt: 2 }}>
-          <Grid item xs={12} md={6}>
-      <Card sx={{ background: theme.palette.background.paper, border: `1px solid ${theme.palette.divider}` }}>
-              <CardContent>
-        <Typography variant="h6" sx={{ color: theme.palette.text.primary, mb: 2, fontWeight: 700 }}>User Profile</Typography>
+          {/* Profile Card */}
+      <Grid item xs={12} sm={6} md={6}>
+            <Card sx={{ background: theme.palette.mode === 'dark' ? 'linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.045) 100%)' : theme.palette.background.paper, border: `1px solid ${theme.palette.divider}`, height: '100%' }}>
+        <CardContent sx={{ py: 1 }}> {/* equal vertical padding reduction */}
+                <Typography variant="h6" sx={{ color: theme.palette.text.primary, mb: 2, fontWeight: 700 }}>User Profile</Typography>
                 <ProfileForm />
               </CardContent>
             </Card>
@@ -190,9 +191,9 @@ const ProfileForm = () => {
         <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>Wallet:</Typography>
         <Typography variant="body2" sx={{ color: theme.palette.text.primary, fontWeight: 600 }}>{formatAddress(account)}</Typography>
         {verified ? (
-          <Chip size="small" label="Verified" sx={{ bgcolor: 'rgba(34,197,94,0.15)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.3)' }} />
+          <Chip size="small" label="Verified" sx={{ bgcolor: theme.palette.mode==='dark' ? 'rgba(34,197,94,0.15)' : 'rgba(34,197,94,0.12)', color: theme.palette.success.main, border: `1px solid ${theme.palette.success.main}55` }} />
         ) : (
-          <Chip size="small" label="Unverified" sx={{ bgcolor: 'rgba(239,68,68,0.15)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' }} />
+          <Chip size="small" label="Unverified" sx={{ bgcolor: theme.palette.mode==='dark' ? 'rgba(220,38,38,0.15)' : 'rgba(220,38,38,0.12)', color: theme.palette.error.main, border: `1px solid ${theme.palette.error.main}55` }} />
         )}
       </Box>
 

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
+import { ThemeProvider, CssBaseline } from '@mui/material';
 import { GlobalStyles } from '@mui/system';
+import { lightTheme, darkTheme, tokens } from '../theme/theme';
 
 const ThemeModeContext = createContext();
 
@@ -10,44 +11,7 @@ export const useThemeMode = () => {
   return ctx;
 };
 
-function buildTheme(mode) {
-  const isDark = mode === 'dark';
-  return createTheme({
-    palette: {
-      mode,
-      // Grayscale primary/secondary for black/white themed UI
-      primary: { main: isDark ? '#374151' : '#111827', contrastText: isDark ? '#f8fafc' : '#ffffff' },
-      secondary: { main: isDark ? '#6b7280' : '#9ca3af', contrastText: isDark ? '#f8fafc' : '#111827' },
-      background: {
-        default: isDark ? '#0f172a' : '#f5f7fb',
-        paper: isDark ? '#111827' : '#ffffff',
-      },
-      text: {
-        primary: isDark ? '#f8fafc' : '#0f172a',
-        secondary: isDark ? '#94a3b8' : '#334155',
-      },
-      divider: isDark ? 'rgba(148,163,184,0.2)' : 'rgba(0,0,0,0.12)'
-    },
-    shape: { borderRadius: 12 },
-    typography: {
-      fontFamily: 'Inter, Segoe UI, Roboto, Helvetica, Arial, sans-serif',
-      h4: { fontWeight: 700 },
-      h6: { fontWeight: 600 },
-    },
-    components: {
-      MuiCard: {
-        styleOverrides: {
-          root: {
-            backdropFilter: 'blur(12px)'
-          }
-        }
-      },
-      MuiButton: {
-        styleOverrides: { root: { textTransform: 'none', borderRadius: 10 } }
-      }
-    }
-  });
-}
+const buildTheme = (mode) => (mode === 'dark' ? darkTheme : lightTheme);
 
 export const ThemeModeProvider = ({ children }) => {
   const [mode, setMode] = useState(() => localStorage.getItem('themeMode') || 'dark');
@@ -57,18 +21,37 @@ export const ThemeModeProvider = ({ children }) => {
     document.documentElement.setAttribute('data-theme', mode);
   }, [mode]);
 
-  const theme = useMemo(() => buildTheme(mode), [mode]);
+  const theme = useMemo(() => {
+    const t = buildTheme(mode);
+    // attach tokens for component-level access (e.g., KPIStat uses theme.tokens)
+    t.tokens = tokens;
+    return t;
+  }, [mode]);
 
-  const value = useMemo(() => ({ mode, setMode, toggle: () => setMode((m) => (m === 'dark' ? 'light' : 'dark')) }), [mode]);
+  const value = useMemo(() => ({ mode, setMode, toggle: () => setMode((m) => (m === 'dark' ? 'light' : 'dark')), tokens }), [mode]);
 
   return (
     <ThemeModeContext.Provider value={value}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <GlobalStyles styles={{
+          'html, body, #root': {
+            minHeight: '100%',
+            height: 'auto',
+            overflowX: 'hidden',
+            overflowY: 'auto',
+            scrollbarWidth: 'none', // Firefox
+            msOverflowStyle: 'none' // IE/Edge legacy
+          },
+          'html::-webkit-scrollbar, body::-webkit-scrollbar, #root::-webkit-scrollbar': {
+            width: 0,
+            height: 0
+          },
           body: {
             backgroundColor: theme.palette.background.default,
-            color: theme.palette.text.primary
+            color: theme.palette.text.primary,
+            margin: 0,
+            padding: 0
           },
           '::-webkit-scrollbar-thumb': {
             background: theme.palette.mode === 'dark' ? 'rgba(148,163,184,0.3)' : 'rgba(0,0,0,0.2)'

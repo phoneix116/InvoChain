@@ -13,6 +13,7 @@ import {
   Chip,
   Button,
   TextField,
+  TablePagination,
   InputAdornment,
   Grid,
   MenuItem,
@@ -28,11 +29,13 @@ import {
   Refresh,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from '@mui/material/styles';
 import { useWallet } from '../contexts/WalletContext';
 import { useInvoice } from '../contexts/InvoiceContext';
 
 const InvoiceList = () => {
   const navigate = useNavigate();
+  const theme = useTheme();
   const { isConnected, account, formatAddress } = useWallet();
   const { userInvoices, loading, loadUserInvoices, formatInvoiceStatus, getStatusColor } = useInvoice();
 
@@ -41,6 +44,8 @@ const InvoiceList = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortOrder, setSortOrder] = useState('desc');
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   useEffect(() => {
     if (isConnected && account) {
@@ -111,7 +116,19 @@ const InvoiceList = () => {
     });
 
     setFilteredInvoices(filtered);
+    setPage(0); // reset page when filters change
   }, [userInvoices, searchTerm, statusFilter, sortBy, sortOrder]);
+
+  const paginatedInvoices = React.useMemo(() => {
+    const start = page * rowsPerPage;
+    return filteredInvoices.slice(start, start + rowsPerPage);
+  }, [filteredInvoices, page, rowsPerPage]);
+
+  const handleChangePage = (_e, newPage) => setPage(newPage);
+  const handleChangeRowsPerPage = (e) => {
+    setRowsPerPage(parseInt(e.target.value, 10));
+    setPage(0);
+  };
 
   const handleRefresh = () => {
     loadUserInvoices();
@@ -141,12 +158,13 @@ const InvoiceList = () => {
     />
   );
 
+
   if (!isConnected) {
     return (
       <Box 
         sx={{ 
           minHeight: '100vh',
-          background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 25%, #334155 50%, #475569 75%, #64748b 100%)',
+          backgroundColor: theme.palette.background.default,
           position: 'relative',
           '&::before': {
             content: '""',
@@ -155,10 +173,11 @@ const InvoiceList = () => {
             left: 0,
             right: 0,
             bottom: 0,
-            background: `
-              radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
-              radial-gradient(circle at 80% 20%, rgba(147, 197, 253, 0.1) 0%, transparent 50%)
-            `,
+            background: theme.palette.mode === 'dark'
+              ? `radial-gradient(circle at 20% 80%, rgba(59,130,246,0.12) 0%, transparent 55%),
+                 radial-gradient(circle at 80% 20%, rgba(147,197,253,0.12) 0%, transparent 55%)`
+              : `radial-gradient(circle at 20% 80%, rgba(59,130,246,0.08) 0%, transparent 55%),
+                 radial-gradient(circle at 80% 20%, rgba(147,197,253,0.08) 0%, transparent 55%)`,
             pointerEvents: 'none',
           }
         }}
@@ -167,9 +186,11 @@ const InvoiceList = () => {
           <Alert 
             severity="warning"
             sx={{
-              background: 'linear-gradient(145deg, rgba(120, 53, 15, 0.95) 0%, rgba(146, 64, 14, 0.95) 100%)',
-              color: '#fbbf24',
-              border: '1px solid rgba(245, 158, 11, 0.3)',
+              background: theme.palette.mode === 'dark'
+                ? 'linear-gradient(145deg, rgba(120,53,15,0.95) 0%, rgba(146,64,14,0.95) 100%)'
+                : 'linear-gradient(145deg, rgba(255,247,237,0.95) 0%, rgba(255,237,213,0.95) 100%)',
+              color: theme.palette.warning.main,
+              border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(245,158,11,0.3)' : 'rgba(217,119,6,0.35)'}`,
               backdropFilter: 'blur(20px)',
             }}
           >
@@ -181,36 +202,17 @@ const InvoiceList = () => {
   }
 
   return (
-    <Box 
-      sx={{ 
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 25%, #334155 50%, #475569 75%, #64748b 100%)',
-        position: 'relative',
-        '&::before': {
-          content: '""',
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: `
-            radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
-            radial-gradient(circle at 80% 20%, rgba(147, 197, 253, 0.1) 0%, transparent 50%)
-          `,
-          pointerEvents: 'none',
-        }
-      }}
-    >
-      <Container maxWidth="xl" sx={{ pt: 4, pb: 4, position: 'relative', zIndex: 1 }}>
-        <Box>
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
-            <Typography 
+  <Box sx={{ minHeight: '100vh', height: '100vh', backgroundColor: theme.palette.background.default, display:'flex', flexDirection:'column', overflowX:'hidden', overflowY:'auto' }}>
+      <Box sx={{ flex:1, display:'flex', flexDirection:'column', pt: 2, pb: 2, position: 'relative', zIndex: 1 }}>
+        <Box sx={{ flexShrink:0 }}>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+            <Typography
               variant="h3" 
               component="h1"
               sx={{
                 fontWeight: 700,
-                color: '#f8fafc',
-                fontSize: { xs: '2rem', md: '2.5rem' },
+                color: theme.palette.text.primary,
+                fontSize: { xs: '1.6rem', md: '2rem' },
                 letterSpacing: '-0.025em'
               }}
             >
@@ -222,21 +224,25 @@ const InvoiceList = () => {
               onClick={handleRefresh}
               disabled={loading}
               sx={{
-                bgcolor: 'rgba(59, 130, 246, 0.9)',
+                bgcolor: theme.palette.primary.main,
                 backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(59, 130, 246, 0.3)',
+                border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(59,130,246,0.4)' : theme.palette.primary.light}`,
                 borderRadius: 2,
                 fontWeight: 600,
                 textTransform: 'none',
-                boxShadow: '0 10px 25px rgba(59, 130, 246, 0.25)',
+                boxShadow: theme.palette.mode === 'dark'
+                  ? '0 10px 25px rgba(0,0,0,0.4)'
+                  : '0 6px 18px rgba(0,0,0,0.15)',
                 '&:hover': {
-                  bgcolor: 'rgba(59, 130, 246, 1)',
+                  bgcolor: theme.palette.primary.dark,
                   transform: 'translateY(-2px)',
-                  boxShadow: '0 15px 35px rgba(59, 130, 246, 0.35)',
+                  boxShadow: theme.palette.mode === 'dark'
+                    ? '0 15px 35px rgba(0,0,0,0.55)'
+                    : '0 10px 28px rgba(0,0,0,0.2)',
                 },
                 '&:disabled': {
-                  bgcolor: 'rgba(59, 130, 246, 0.5)',
-                  color: 'rgba(255, 255, 255, 0.7)',
+                  bgcolor: theme.palette.action.disabledBackground,
+                  color: theme.palette.action.disabled,
                 },
                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
               }}
@@ -247,15 +253,20 @@ const InvoiceList = () => {
         </Box>
 
         {/* Filters */}
-        <Box>
-          <Card 
+        <Box sx={{ flexShrink:0 }}>
+          <Card
             sx={{ 
-              mb: 4,
-              background: 'linear-gradient(145deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
-              border: '1px solid rgba(148, 163, 184, 0.2)',
+              mb: 1.5,
+              background: theme.palette.mode === 'dark'
+                ? 'linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.045) 100%)'
+                : 'linear-gradient(145deg, rgba(255,255,255,0.95) 0%, rgba(241,245,249,0.95) 100%)',
+              border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(148,163,184,0.25)' : 'rgba(203,213,225,0.6)'}`,
               borderRadius: 3,
-              backdropFilter: 'blur(20px)',
-              boxShadow: '0 25px 50px rgba(0, 0, 0, 0.25)',
+              backdropFilter: 'blur(24px) saturate(120%)',
+              WebkitBackdropFilter: 'blur(24px) saturate(120%)',
+              boxShadow: theme.palette.mode === 'dark'
+                ? '0 25px 50px rgba(0,0,0,0.35)'
+                : '0 10px 30px rgba(0,0,0,0.08)',
               '&::before': {
                 content: '""',
                 position: 'absolute',
@@ -263,13 +274,13 @@ const InvoiceList = () => {
                 left: 0,
                 right: 0,
                 height: '1px',
-                background: 'linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.5), transparent)',
+                background: `linear-gradient(90deg, transparent, ${theme.palette.primary.main}, transparent)`,
               }
             }}
           >
-            <CardContent sx={{ p: 3 }}>
-              <Grid container spacing={3} alignItems="center">
-            <Grid item xs={12} sm={6} md={4}>
+            <CardContent sx={{ p: 1.5 }}>
+              <Grid container spacing={{ xs: 2, md: 3 }} alignItems="center">
+            <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
                 label="Search"
@@ -278,41 +289,32 @@ const InvoiceList = () => {
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <Search sx={{ color: '#94a3b8' }} />
+                      <Search sx={{ color: theme.palette.text.secondary }} />
                     </InputAdornment>
                   ),
                 }}
                 placeholder="Search by ID, description, or recipient"
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    bgcolor: 'rgba(15, 23, 42, 0.8)',
-                    '& fieldset': {
-                      borderColor: 'rgba(148, 163, 184, 0.3)',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: 'rgba(59, 130, 246, 0.5)',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#3b82f6',
-                    },
+                    background: theme.palette.mode === 'dark'
+                      ? 'linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.035) 100%)'
+                      : theme.palette.background.paper,
+                    backdropFilter: theme.palette.mode === 'dark' ? 'blur(14px) saturate(120%)' : undefined,
+                    WebkitBackdropFilter: theme.palette.mode === 'dark' ? 'blur(14px) saturate(120%)' : undefined,
+                    '& fieldset': { borderColor: theme.palette.divider },
+                    '&:hover fieldset': { borderColor: theme.palette.mode === 'dark' ? 'rgba(148,163,184,0.6)' : theme.palette.primary.light },
+                    '&.Mui-focused fieldset': { borderColor: theme.palette.mode === 'dark' ? 'rgba(148,163,184,0.9)' : theme.palette.primary.main },
                   },
                   '& .MuiInputLabel-root': {
-                    color: '#94a3b8',
-                    '&.Mui-focused': {
-                      color: '#3b82f6',
-                    },
+                    color: theme.palette.text.secondary,
+                    '&.Mui-focused': { color: theme.palette.primary.main },
                   },
-                  '& .MuiOutlinedInput-input': {
-                    color: '#f8fafc',
-                  },
-                  '& .MuiInputBase-input::placeholder': {
-                    color: '#64748b',
-                    opacity: 1,
-                  },
+                  '& .MuiOutlinedInput-input': { color: theme.palette.text.primary },
+                  '& .MuiInputBase-input::placeholder': { color: theme.palette.text.disabled, opacity: 1 },
                 }}
               />
             </Grid>
-            <Grid item xs={12} sm={3} md={2}>
+            <Grid item xs={6} md={2}>
               <TextField
                 fullWidth
                 select
@@ -321,29 +323,21 @@ const InvoiceList = () => {
                 onChange={(e) => setStatusFilter(e.target.value)}
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    bgcolor: 'rgba(15, 23, 42, 0.8)',
-                    '& fieldset': {
-                      borderColor: 'rgba(148, 163, 184, 0.3)',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: 'rgba(59, 130, 246, 0.5)',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#3b82f6',
-                    },
+                    background: theme.palette.mode === 'dark'
+                      ? 'linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.035) 100%)'
+                      : theme.palette.background.paper,
+                    backdropFilter: theme.palette.mode === 'dark' ? 'blur(14px) saturate(120%)' : undefined,
+                    WebkitBackdropFilter: theme.palette.mode === 'dark' ? 'blur(14px) saturate(120%)' : undefined,
+                    '& fieldset': { borderColor: theme.palette.divider },
+                    '&:hover fieldset': { borderColor: theme.palette.mode === 'dark' ? 'rgba(148,163,184,0.6)' : theme.palette.primary.light },
+                    '&.Mui-focused fieldset': { borderColor: theme.palette.mode === 'dark' ? 'rgba(148,163,184,0.9)' : theme.palette.primary.main },
                   },
                   '& .MuiInputLabel-root': {
-                    color: '#94a3b8',
-                    '&.Mui-focused': {
-                      color: '#3b82f6',
-                    },
+                    color: theme.palette.text.secondary,
+                    '&.Mui-focused': { color: theme.palette.primary.main },
                   },
-                  '& .MuiSelect-select': {
-                    color: '#f8fafc',
-                  },
-                  '& .MuiSvgIcon-root': {
-                    color: '#94a3b8',
-                  },
+                  '& .MuiSelect-select': { color: theme.palette.text.primary },
+                  '& .MuiSvgIcon-root': { color: theme.palette.text.secondary },
                 }}
               >
                 <MenuItem value="all">All</MenuItem>
@@ -354,7 +348,7 @@ const InvoiceList = () => {
                 <MenuItem value="4">Cancelled</MenuItem>
               </TextField>
             </Grid>
-            <Grid item xs={12} sm={3} md={2}>
+            <Grid item xs={6} md={2}>
               <TextField
                 fullWidth
                 select
@@ -363,29 +357,21 @@ const InvoiceList = () => {
                 onChange={(e) => setSortBy(e.target.value)}
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    bgcolor: 'rgba(15, 23, 42, 0.8)',
-                    '& fieldset': {
-                      borderColor: 'rgba(148, 163, 184, 0.3)',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: 'rgba(59, 130, 246, 0.5)',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#3b82f6',
-                    },
+                    background: theme.palette.mode === 'dark'
+                      ? 'linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.035) 100%)'
+                      : theme.palette.background.paper,
+                    backdropFilter: theme.palette.mode === 'dark' ? 'blur(14px) saturate(120%)' : undefined,
+                    WebkitBackdropFilter: theme.palette.mode === 'dark' ? 'blur(14px) saturate(120%)' : undefined,
+                    '& fieldset': { borderColor: theme.palette.divider },
+                    '&:hover fieldset': { borderColor: theme.palette.mode === 'dark' ? 'rgba(148,163,184,0.6)' : theme.palette.primary.light },
+                    '&.Mui-focused fieldset': { borderColor: theme.palette.mode === 'dark' ? 'rgba(148,163,184,0.9)' : theme.palette.primary.main },
                   },
                   '& .MuiInputLabel-root': {
-                    color: '#94a3b8',
-                    '&.Mui-focused': {
-                      color: '#3b82f6',
-                    },
+                    color: theme.palette.text.secondary,
+                    '&.Mui-focused': { color: theme.palette.primary.main },
                   },
-                  '& .MuiSelect-select': {
-                    color: '#f8fafc',
-                  },
-                  '& .MuiSvgIcon-root': {
-                    color: '#94a3b8',
-                  },
+                  '& .MuiSelect-select': { color: theme.palette.text.primary },
+                  '& .MuiSvgIcon-root': { color: theme.palette.text.secondary },
                 }}
               >
                 <MenuItem value="createdAt">Created Date</MenuItem>
@@ -393,7 +379,7 @@ const InvoiceList = () => {
                 <MenuItem value="amount">Amount</MenuItem>
               </TextField>
             </Grid>
-            <Grid item xs={12} sm={6} md={2}>
+            <Grid item xs={12} md={2}>
               <TextField
                 fullWidth
                 select
@@ -402,29 +388,21 @@ const InvoiceList = () => {
                 onChange={(e) => setSortOrder(e.target.value)}
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    bgcolor: 'rgba(15, 23, 42, 0.8)',
-                    '& fieldset': {
-                      borderColor: 'rgba(148, 163, 184, 0.3)',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: 'rgba(59, 130, 246, 0.5)',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#3b82f6',
-                    },
+                    background: theme.palette.mode === 'dark'
+                      ? 'linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.035) 100%)'
+                      : theme.palette.background.paper,
+                    backdropFilter: theme.palette.mode === 'dark' ? 'blur(14px) saturate(120%)' : undefined,
+                    WebkitBackdropFilter: theme.palette.mode === 'dark' ? 'blur(14px) saturate(120%)' : undefined,
+                    '& fieldset': { borderColor: theme.palette.divider },
+                    '&:hover fieldset': { borderColor: theme.palette.mode === 'dark' ? 'rgba(148,163,184,0.6)' : theme.palette.primary.light },
+                    '&.Mui-focused fieldset': { borderColor: theme.palette.mode === 'dark' ? 'rgba(148,163,184,0.9)' : theme.palette.primary.main },
                   },
                   '& .MuiInputLabel-root': {
-                    color: '#94a3b8',
-                    '&.Mui-focused': {
-                      color: '#3b82f6',
-                    },
+                    color: theme.palette.text.secondary,
+                    '&.Mui-focused': { color: theme.palette.primary.main },
                   },
-                  '& .MuiSelect-select': {
-                    color: '#f8fafc',
-                  },
-                  '& .MuiSvgIcon-root': {
-                    color: '#94a3b8',
-                  },
+                  '& .MuiSelect-select': { color: theme.palette.text.primary },
+                  '& .MuiSvgIcon-root': { color: theme.palette.text.secondary },
                 }}
               >
                 <MenuItem value="desc">Newest First</MenuItem>
@@ -436,14 +414,23 @@ const InvoiceList = () => {
       </Card>
 
       {/* Invoice Table */}
-      <Card 
+      <Card
         sx={{
-          background: 'linear-gradient(145deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
-          border: '1px solid rgba(148, 163, 184, 0.2)',
+          flex:1,
+          display:'flex',
+          flexDirection:'column',
+          background: theme.palette.mode === 'dark'
+            ? 'linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.045) 100%)'
+            : 'linear-gradient(145deg, rgba(255,255,255,0.95) 0%, rgba(241,245,249,0.95) 100%)',
+          border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(148,163,184,0.25)' : 'rgba(203,213,225,0.6)'}`,
           borderRadius: 3,
-          backdropFilter: 'blur(20px)',
-          boxShadow: '0 25px 50px rgba(0, 0, 0, 0.25)',
+          backdropFilter: 'blur(24px) saturate(120%)',
+          WebkitBackdropFilter: 'blur(24px) saturate(120%)',
+          boxShadow: theme.palette.mode === 'dark'
+            ? '0 18px 40px rgba(0,0,0,0.35)'
+            : '0 8px 24px rgba(0,0,0,0.1)',
           position: 'relative',
+          overflow:'hidden',
           '&::before': {
             content: '""',
             position: 'absolute',
@@ -451,11 +438,11 @@ const InvoiceList = () => {
             left: 0,
             right: 0,
             height: '1px',
-            background: 'linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.5), transparent)',
+            background: `linear-gradient(90deg, transparent, ${theme.palette.primary.main}, transparent)`,
           }
         }}
       >
-        <CardContent>
+  <CardContent sx={{ p: 1.5, display:'flex', flexDirection:'column', flex:1, overflow:'hidden' }}>
           {loading ? (
             <Box display="flex" justifyContent="center" p={3}>
               <CircularProgress />
@@ -468,62 +455,63 @@ const InvoiceList = () => {
               }
             </Alert>
           ) : (
-            <TableContainer>
-              <Table>
+            <>
+            <TableContainer sx={{ flex:1, pr:0.5 }}>
+              <Table size="small" stickyHeader sx={{ tableLayout:'fixed', '& .MuiTableCell-root': { py: 0.5, px: 1 }, '& thead th': { background: theme.palette.mode==='dark' ? 'rgba(255,255,255,0.06)' : 'rgba(241,245,249,0.9)', backdropFilter:'blur(10px) saturate(120%)' } }}>
                 <TableHead>
                   <TableRow>
-                    <TableCell sx={{ color: '#f8fafc', fontWeight: 600 }}>ID</TableCell>
-                    <TableCell sx={{ color: '#f8fafc', fontWeight: 600 }}>Recipient</TableCell>
-                    <TableCell sx={{ color: '#f8fafc', fontWeight: 600 }}>Amount</TableCell>
-                    <TableCell sx={{ color: '#f8fafc', fontWeight: 600 }}>Status</TableCell>
-                    <TableCell sx={{ color: '#f8fafc', fontWeight: 600 }}>Created</TableCell>
-                    <TableCell sx={{ color: '#f8fafc', fontWeight: 600 }}>Due Date</TableCell>
-                    <TableCell sx={{ color: '#f8fafc', fontWeight: 600 }}>Actions</TableCell>
+                    <TableCell sx={{ color: theme.palette.text.primary, fontWeight: 600 }}>ID</TableCell>
+                    <TableCell sx={{ color: theme.palette.text.primary, fontWeight: 600 }}>Recipient</TableCell>
+                    <TableCell sx={{ color: theme.palette.text.primary, fontWeight: 600 }}>Amount</TableCell>
+                    <TableCell sx={{ color: theme.palette.text.primary, fontWeight: 600 }}>Status</TableCell>
+                    <TableCell sx={{ color: theme.palette.text.primary, fontWeight: 600 }}>Created</TableCell>
+                    <TableCell sx={{ color: theme.palette.text.primary, fontWeight: 600 }}>Due Date</TableCell>
+                    <TableCell sx={{ color: theme.palette.text.primary, fontWeight: 600 }}>Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {filteredInvoices.map((invoice) => (
-                    <TableRow key={invoice.id} hover sx={{ '&:hover': { bgcolor: 'rgba(59, 130, 246, 0.1)' } }}>
-                      <TableCell sx={{ borderColor: 'rgba(148, 163, 184, 0.2)' }}>
-                        <Typography variant="subtitle2" sx={{ color: '#f8fafc', fontWeight: 600 }}>
+                  {paginatedInvoices.map((invoice) => (
+                    <TableRow key={invoice.id} hover sx={{ '&:hover': { bgcolor: theme.palette.action.hover } }}>
+                      <TableCell sx={{ borderColor: theme.palette.divider }}>
+                        <Typography variant="subtitle2" sx={{ color: theme.palette.text.primary, fontWeight: 600 }}>
                           #{invoice.id}
                         </Typography>
                       </TableCell>
-                      <TableCell sx={{ borderColor: 'rgba(148, 163, 184, 0.2)' }}>
+                      <TableCell sx={{ borderColor: theme.palette.divider }}>
                         <Tooltip title={invoice.recipient?.walletAddress || invoice.recipient}>
-                          <Typography variant="body2" sx={{ color: '#94a3b8', fontFamily: 'monospace' }}>
+                          <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontFamily: 'monospace' }}>
                             {formatAddress(invoice.recipient?.walletAddress || invoice.recipient)}
                           </Typography>
                         </Tooltip>
                       </TableCell>
-                      <TableCell sx={{ borderColor: 'rgba(148, 163, 184, 0.2)' }}>
-                        <Typography variant="body2" sx={{ color: '#22c55e', fontWeight: 600 }}>
+                      <TableCell sx={{ borderColor: theme.palette.divider }}>
+                        <Typography variant="body2" sx={{ color: theme.palette.success.main, fontWeight: 600 }}>
                           {formatAmount(invoice.amount)} ETH
                         </Typography>
                       </TableCell>
-                      <TableCell sx={{ borderColor: 'rgba(148, 163, 184, 0.2)' }}>
+                      <TableCell sx={{ borderColor: theme.palette.divider }}>
                         {getStatusBadge(invoice.status)}
                       </TableCell>
-                      <TableCell sx={{ borderColor: 'rgba(148, 163, 184, 0.2)' }}>
-                        <Typography variant="body2" sx={{ color: '#94a3b8' }}>
+                      <TableCell sx={{ borderColor: theme.palette.divider }}>
+                        <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
                           {new Date(invoice.createdAt).toLocaleDateString()}
                         </Typography>
                       </TableCell>
-                      <TableCell sx={{ borderColor: 'rgba(148, 163, 184, 0.2)' }}>
-                        <Typography variant="body2" sx={{ color: '#94a3b8' }}>
+                      <TableCell sx={{ borderColor: theme.palette.divider }}>
+                        <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
                           {new Date(invoice.dueDate).toLocaleDateString()}
                         </Typography>
                       </TableCell>
-                      <TableCell sx={{ borderColor: 'rgba(148, 163, 184, 0.2)' }}>
+                      <TableCell sx={{ borderColor: theme.palette.divider }}>
                         <Tooltip title="View Details">
                           <IconButton
                             size="small"
                             onClick={() => handleViewInvoice(invoice.id || invoice.invoiceId)}
                             sx={{ 
-                              color: '#94a3b8',
+                              color: theme.palette.text.secondary,
                               '&:hover': { 
-                                color: '#3b82f6',
-                                bgcolor: 'rgba(59, 130, 246, 0.1)' 
+                                color: theme.palette.primary.main,
+                                bgcolor: theme.palette.action.hover 
                               }
                             }}
                           >
@@ -536,31 +524,32 @@ const InvoiceList = () => {
                 </TableBody>
               </Table>
             </TableContainer>
+            <Box mt={1} display="flex" justifyContent="space-between" alignItems="center" flexShrink={0}>
+              <Box>
+                <Typography variant="caption" sx={{ color: theme.palette.text.secondary, display:'block' }}>
+                  {filteredInvoices.length === 0 ? 'No invoices' : `Showing ${paginatedInvoices.length} of ${filteredInvoices.length} filtered (${userInvoices.length} total)`}
+                </Typography>
+              </Box>
+              <TablePagination
+                component="div"
+                count={filteredInvoices.length}
+                page={page}
+                onPageChange={handleChangePage}
+                rowsPerPage={rowsPerPage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+                rowsPerPageOptions={[5,10,25,50]}
+                labelRowsPerPage="Rows"
+                showFirstButton
+                showLastButton
+                sx={{ '& .MuiTablePagination-toolbar': { p: 0, minHeight: 40 }, '& .MuiTablePagination-displayedRows': { mr: 1 } }}
+              />
+            </Box>
+            </>
           )}
         </CardContent>
       </Card>
-
-      {/* Summary */}
-      {filteredInvoices.length > 0 && (
-        <Card 
-          sx={{ 
-            mt: 2,
-            background: 'linear-gradient(145deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
-            border: '1px solid rgba(148, 163, 184, 0.2)',
-            borderRadius: 3,
-            backdropFilter: 'blur(20px)',
-            boxShadow: '0 25px 50px rgba(0, 0, 0, 0.25)',
-          }}
-        >
-          <CardContent>
-            <Typography variant="subtitle2" sx={{ color: '#94a3b8' }}>
-              Showing {filteredInvoices.length} of {userInvoices.length} invoices
-            </Typography>
-          </CardContent>
-        </Card>
-      )}
         </Box>
-      </Container>
+      </Box>
     </Box>
   );
 };

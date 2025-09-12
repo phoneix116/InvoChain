@@ -7,7 +7,6 @@ import {
   Typography,
   Grid,
   Button,
-  Chip,
   Divider,
   Alert,
   CircularProgress,
@@ -16,13 +15,14 @@ import { useTheme } from '@mui/material/styles';
 import { Download, Payment, CreditCard } from '@mui/icons-material';
 import QRCode from 'react-qr-code';
 import { useInvoice } from '../contexts/InvoiceContext';
+import { StatusChip } from '../components/StatusChip';
 import paymentsAPI from '../services/paymentsAPI';
 import notificationsAPI from '../services/notificationsAPI';
 
 const InvoiceDetails = () => {
   const { id } = useParams();
   const theme = useTheme();
-  const { getInvoiceDetails, formatInvoiceStatus, getStatusColor, payInvoiceETH, payInvoiceToken } = useInvoice();
+  const { getInvoiceDetails, payInvoiceETH, payInvoiceToken } = useInvoice();
   
   const [invoice, setInvoice] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -276,13 +276,7 @@ const InvoiceDetails = () => {
   }
 
   return (
-  <Box 
-      sx={{
-        minHeight: '100vh',
-    background: theme.palette.mode === 'dark' ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)' : theme.palette.background.default,
-        p: 3
-      }}
-    >
+  <Box sx={{ minHeight: '100vh', background: 'transparent', p: 3 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
         <Typography 
           variant="h4" 
@@ -294,28 +288,19 @@ const InvoiceDetails = () => {
         >
           Invoice #{id}
         </Typography>
-        <Chip
-          label={formatInvoiceStatus(invoice.status)}
-          color={getStatusColor(invoice.status)}
-          size="large"
-          sx={{
-            fontWeight: 600,
-            fontSize: '0.875rem',
-            height: 40,
-            borderRadius: 3
-          }}
-        />
+  <StatusChip status={invoice.status} size="medium" />
       </Box>
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={8}>
           <Card 
             sx={{
-              background: theme.palette.background.paper,
+              background: theme.palette.mode === 'dark' ? 'linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.045) 100%)' : theme.palette.background.paper,
               borderRadius: 3,
               border: `1px solid ${theme.palette.divider}`,
-              boxShadow: '0 25px 50px rgba(0, 0, 0, 0.25)',
-              backdropFilter: 'blur(20px)',
+              boxShadow: '0 25px 50px rgba(0, 0, 0, 0.35)',
+              backdropFilter: 'blur(26px) saturate(120%)',
+              WebkitBackdropFilter: 'blur(26px) saturate(120%)',
               position: 'relative',
               '&::before': {
                 content: '""',
@@ -337,7 +322,9 @@ const InvoiceDetails = () => {
                   <Box 
                     sx={{ 
                       p: 2, 
-                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(15, 23, 42, 0.8)' : 'rgba(0,0,0,0.02)', 
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)', 
+                      backdropFilter: theme.palette.mode === 'dark' ? 'blur(12px) saturate(120%)' : undefined,
+                      WebkitBackdropFilter: theme.palette.mode === 'dark' ? 'blur(12px) saturate(120%)' : undefined,
                       borderRadius: 2,
                       border: `1px solid ${theme.palette.divider}`
                     }}
@@ -345,7 +332,7 @@ const InvoiceDetails = () => {
                     <Typography variant="subtitle2" sx={{ color: theme.palette.text.secondary, mb: 1 }}>
                       Amount
                     </Typography>
-                    <Typography variant="h5" sx={{ color: '#22c55e', fontWeight: 700 }}>
+                    <Typography variant="h5" sx={{ color: theme.palette.success.main, fontWeight: 700 }}>
                       {(() => {
                         const val = typeof invoice.amount === 'object' ? parseFloat(invoice.amount.toString()) : parseFloat(invoice.amount);
                         const isWeiLike = !isNaN(val) && val > 1e12;
@@ -359,7 +346,9 @@ const InvoiceDetails = () => {
                   <Box 
                     sx={{ 
                       p: 2, 
-                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(15, 23, 42, 0.8)' : 'rgba(0,0,0,0.02)', 
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)', 
+                      backdropFilter: theme.palette.mode === 'dark' ? 'blur(12px) saturate(120%)' : undefined,
+                      WebkitBackdropFilter: theme.palette.mode === 'dark' ? 'blur(12px) saturate(120%)' : undefined,
                       borderRadius: 2,
                       border: `1px solid ${theme.palette.divider}`
                     }}
@@ -376,7 +365,9 @@ const InvoiceDetails = () => {
                   <Box 
                     sx={{ 
                       p: 2, 
-                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(15, 23, 42, 0.8)' : 'rgba(0,0,0,0.02)', 
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)', 
+                      backdropFilter: theme.palette.mode === 'dark' ? 'blur(12px) saturate(120%)' : undefined,
+                      WebkitBackdropFilter: theme.palette.mode === 'dark' ? 'blur(12px) saturate(120%)' : undefined,
                       borderRadius: 2,
                       border: `1px solid ${theme.palette.divider}`
                     }}
@@ -398,7 +389,9 @@ const InvoiceDetails = () => {
                   <Box 
                     sx={{ 
                       p: 2, 
-                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(15, 23, 42, 0.8)' : 'rgba(0,0,0,0.02)', 
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)', 
+                      backdropFilter: theme.palette.mode === 'dark' ? 'blur(12px) saturate(120%)' : undefined,
+                      WebkitBackdropFilter: theme.palette.mode === 'dark' ? 'blur(12px) saturate(120%)' : undefined,
                       borderRadius: 2,
                       border: `1px solid ${theme.palette.divider}`
                     }}
@@ -548,11 +541,12 @@ const InvoiceDetails = () => {
           <Card 
             sx={{ 
               mt: 2,
-              background: theme.palette.background.paper,
+              background: theme.palette.mode === 'dark' ? 'linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.045) 100%)' : theme.palette.background.paper,
               borderRadius: 3,
               border: `1px solid ${theme.palette.divider}`,
-              boxShadow: '0 25px 50px rgba(0, 0, 0, 0.25)',
-              backdropFilter: 'blur(20px)',
+              boxShadow: '0 25px 50px rgba(0, 0, 0, 0.35)',
+              backdropFilter: 'blur(26px) saturate(120%)',
+              WebkitBackdropFilter: 'blur(26px) saturate(120%)',
               position: 'relative',
               '&::before': {
                 content: '""',

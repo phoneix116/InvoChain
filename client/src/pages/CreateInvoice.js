@@ -16,6 +16,7 @@ import {
   Divider,
 } from '@mui/material';
 import { Receipt, Send } from '@mui/icons-material';
+import { useTheme } from '@mui/material/styles';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { ethers } from 'ethers';
@@ -28,6 +29,7 @@ const steps = ['Invoice Details', 'Preview & Submit'];
 
 const CreateInvoice = () => {
   const navigate = useNavigate();
+  const theme = useTheme();
   const { isConnected, account } = useWallet();
   const { createInvoice, loading } = useInvoice();
 
@@ -189,12 +191,12 @@ const CreateInvoice = () => {
         <Alert 
           severity="warning"
           sx={{
-            bgcolor: 'rgba(251, 191, 36, 0.1)',
-            border: '1px solid rgba(251, 191, 36, 0.2)',
-            color: '#fbbf24',
+            bgcolor: theme.palette.mode === 'dark' ? 'rgba(251, 191, 36, 0.1)' : 'rgba(253, 230, 138, 0.4)',
+            border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(251, 191, 36, 0.2)' : 'rgba(217, 119, 6, 0.3)'}`,
+            color: theme.palette.warning.main,
             borderRadius: 2,
             '& .MuiAlert-icon': {
-              color: '#fbbf24'
+              color: theme.palette.warning.main
             }
           }}
         >
@@ -220,29 +222,19 @@ const CreateInvoice = () => {
                 placeholder="e.g., Web Development Services"
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    bgcolor: 'rgba(15, 23, 42, 0.8)',
-                    '& fieldset': {
-                      borderColor: 'rgba(148, 163, 184, 0.3)',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: 'rgba(59, 130, 246, 0.5)',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#3b82f6',
-                    },
+                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : theme.palette.background.paper,
+                    backdropFilter: theme.palette.mode === 'dark' ? 'blur(14px) saturate(120%)' : undefined,
+                    WebkitBackdropFilter: theme.palette.mode === 'dark' ? 'blur(14px) saturate(120%)' : undefined,
+                    '& fieldset': { borderColor: theme.palette.divider },
+                    '&:hover fieldset': { borderColor: theme.palette.primary.light },
+                    '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main },
                   },
                   '& .MuiInputLabel-root': {
-                    color: '#94a3b8',
-                    '&.Mui-focused': {
-                      color: '#3b82f6',
-                    },
+                    color: theme.palette.text.secondary,
+                    '&.Mui-focused': { color: theme.palette.primary.main },
                   },
-                  '& .MuiOutlinedInput-input': {
-                    color: '#f8fafc',
-                  },
-                  '& .MuiFormHelperText-root': {
-                    color: '#ef4444',
-                  },
+                  '& .MuiOutlinedInput-input': { color: theme.palette.text.primary },
+                  '& .MuiFormHelperText-root': { color: theme.palette.error.main },
                 }}
               />
             </Grid>
@@ -257,26 +249,18 @@ const CreateInvoice = () => {
                 placeholder="Brief description of services or products"
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    bgcolor: 'rgba(15, 23, 42, 0.8)',
-                    '& fieldset': {
-                      borderColor: 'rgba(148, 163, 184, 0.3)',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: 'rgba(59, 130, 246, 0.5)',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#3b82f6',
-                    },
+                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : theme.palette.background.paper,
+                    backdropFilter: theme.palette.mode === 'dark' ? 'blur(14px) saturate(120%)' : undefined,
+                    WebkitBackdropFilter: theme.palette.mode === 'dark' ? 'blur(14px) saturate(120%)' : undefined,
+                    '& fieldset': { borderColor: theme.palette.divider },
+                    '&:hover fieldset': { borderColor: theme.palette.primary.light },
+                    '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main },
                   },
                   '& .MuiInputLabel-root': {
-                    color: '#94a3b8',
-                    '&.Mui-focused': {
-                      color: '#3b82f6',
-                    },
+                    color: theme.palette.text.secondary,
+                    '&.Mui-focused': { color: theme.palette.primary.main },
                   },
-                  '& .MuiOutlinedInput-input': {
-                    color: '#f8fafc',
-                  },
+                  '& .MuiOutlinedInput-input': { color: theme.palette.text.primary },
                 }}
               />
             </Grid>
@@ -291,29 +275,19 @@ const CreateInvoice = () => {
                 placeholder="e.g., John Doe"
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    bgcolor: 'rgba(15, 23, 42, 0.8)',
-                    '& fieldset': {
-                      borderColor: 'rgba(148, 163, 184, 0.3)',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: 'rgba(59, 130, 246, 0.5)',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#3b82f6',
-                    },
+                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : theme.palette.background.paper,
+                    backdropFilter: theme.palette.mode === 'dark' ? 'blur(14px) saturate(120%)' : undefined,
+                    WebkitBackdropFilter: theme.palette.mode === 'dark' ? 'blur(14px) saturate(120%)' : undefined,
+                    '& fieldset': { borderColor: theme.palette.divider },
+                    '&:hover fieldset': { borderColor: theme.palette.primary.light },
+                    '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main },
                   },
                   '& .MuiInputLabel-root': {
-                    color: '#94a3b8',
-                    '&.Mui-focused': {
-                      color: '#3b82f6',
-                    },
+                    color: theme.palette.text.secondary,
+                    '&.Mui-focused': { color: theme.palette.primary.main },
                   },
-                  '& .MuiOutlinedInput-input': {
-                    color: '#f8fafc',
-                  },
-                  '& .MuiFormHelperText-root': {
-                    color: '#ef4444',
-                  },
+                  '& .MuiOutlinedInput-input': { color: theme.palette.text.primary },
+                  '& .MuiFormHelperText-root': { color: theme.palette.error.main },
                 }}
               />
             </Grid>
@@ -327,26 +301,18 @@ const CreateInvoice = () => {
                 placeholder="recipient@example.com"
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    bgcolor: 'rgba(15, 23, 42, 0.8)',
-                    '& fieldset': {
-                      borderColor: 'rgba(148, 163, 184, 0.3)',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: 'rgba(59, 130, 246, 0.5)',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#3b82f6',
-                    },
+                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : theme.palette.background.paper,
+                    backdropFilter: theme.palette.mode === 'dark' ? 'blur(14px) saturate(120%)' : undefined,
+                    WebkitBackdropFilter: theme.palette.mode === 'dark' ? 'blur(14px) saturate(120%)' : undefined,
+                    '& fieldset': { borderColor: theme.palette.divider },
+                    '&:hover fieldset': { borderColor: theme.palette.primary.light },
+                    '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main },
                   },
                   '& .MuiInputLabel-root': {
-                    color: '#94a3b8',
-                    '&.Mui-focused': {
-                      color: '#3b82f6',
-                    },
+                    color: theme.palette.text.secondary,
+                    '&.Mui-focused': { color: theme.palette.primary.main },
                   },
-                  '& .MuiOutlinedInput-input': {
-                    color: '#f8fafc',
-                  },
+                  '& .MuiOutlinedInput-input': { color: theme.palette.text.primary },
                 }}
               />
             </Grid>
@@ -361,30 +327,19 @@ const CreateInvoice = () => {
                 placeholder="0x..."
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    bgcolor: 'rgba(15, 23, 42, 0.8)',
-                    '& fieldset': {
-                      borderColor: 'rgba(148, 163, 184, 0.3)',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: 'rgba(59, 130, 246, 0.5)',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#3b82f6',
-                    },
+                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : theme.palette.background.paper,
+                    backdropFilter: theme.palette.mode === 'dark' ? 'blur(14px) saturate(120%)' : undefined,
+                    WebkitBackdropFilter: theme.palette.mode === 'dark' ? 'blur(14px) saturate(120%)' : undefined,
+                    '& fieldset': { borderColor: theme.palette.divider },
+                    '&:hover fieldset': { borderColor: theme.palette.primary.light },
+                    '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main },
                   },
                   '& .MuiInputLabel-root': {
-                    color: '#94a3b8',
-                    '&.Mui-focused': {
-                      color: '#3b82f6',
-                    },
+                    color: theme.palette.text.secondary,
+                    '&.Mui-focused': { color: theme.palette.primary.main },
                   },
-                  '& .MuiOutlinedInput-input': {
-                    color: '#f8fafc',
-                    fontFamily: 'monospace',
-                  },
-                  '& .MuiFormHelperText-root': {
-                    color: '#ef4444',
-                  },
+                  '& .MuiOutlinedInput-input': { color: theme.palette.text.primary, fontFamily: 'monospace' },
+                  '& .MuiFormHelperText-root': { color: theme.palette.error.main },
                 }}
               />
             </Grid>
@@ -400,29 +355,19 @@ const CreateInvoice = () => {
                 inputProps={{ min: 0, step: 0.01 }}
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    bgcolor: 'rgba(15, 23, 42, 0.8)',
-                    '& fieldset': {
-                      borderColor: 'rgba(148, 163, 184, 0.3)',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: 'rgba(59, 130, 246, 0.5)',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#3b82f6',
-                    },
+                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : theme.palette.background.paper,
+                    backdropFilter: theme.palette.mode === 'dark' ? 'blur(14px) saturate(120%)' : undefined,
+                    WebkitBackdropFilter: theme.palette.mode === 'dark' ? 'blur(14px) saturate(120%)' : undefined,
+                    '& fieldset': { borderColor: theme.palette.divider },
+                    '&:hover fieldset': { borderColor: theme.palette.primary.light },
+                    '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main },
                   },
                   '& .MuiInputLabel-root': {
-                    color: '#94a3b8',
-                    '&.Mui-focused': {
-                      color: '#3b82f6',
-                    },
+                    color: theme.palette.text.secondary,
+                    '&.Mui-focused': { color: theme.palette.primary.main },
                   },
-                  '& .MuiOutlinedInput-input': {
-                    color: '#f8fafc',
-                  },
-                  '& .MuiFormHelperText-root': {
-                    color: '#ef4444',
-                  },
+                  '& .MuiOutlinedInput-input': { color: theme.palette.text.primary },
+                  '& .MuiFormHelperText-root': { color: theme.palette.error.main },
                 }}
               />
             </Grid>
@@ -442,29 +387,20 @@ const CreateInvoice = () => {
                 InputLabelProps={{ shrink: true }}
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    bgcolor: 'rgba(15, 23, 42, 0.8)',
-                    '& fieldset': {
-                      borderColor: 'rgba(148, 163, 184, 0.3)',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: 'rgba(59, 130, 246, 0.5)',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#3b82f6',
-                    },
+                    background: theme.palette.mode === 'dark'
+                      ? 'linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.035) 100%)'
+                      : theme.palette.background.paper,
+                    backdropFilter: theme.palette.mode === 'dark' ? 'blur(14px) saturate(120%)' : undefined,
+                    WebkitBackdropFilter: theme.palette.mode === 'dark' ? 'blur(14px) saturate(120%)' : undefined,
+                    '& fieldset': { borderColor: theme.palette.divider },
+                    '&:hover fieldset': { borderColor: theme.palette.mode === 'dark' ? 'rgba(148,163,184,0.6)' : theme.palette.primary.light },
+                    '&.Mui-focused fieldset': { borderColor: theme.palette.mode === 'dark' ? 'rgba(148,163,184,0.9)' : theme.palette.primary.main },
                   },
                   '& .MuiInputLabel-root': {
-                    color: '#94a3b8',
-                    '&.Mui-focused': {
-                      color: '#3b82f6',
-                    },
+                    color: theme.palette.text.secondary,
+                    '&.Mui-focused': { color: theme.palette.primary.main },
                   },
-                  '& .MuiOutlinedInput-input': {
-                    color: '#f8fafc',
-                  },
-                  '& .MuiFormHelperText-root': {
-                    color: '#ef4444',
-                  },
+                  '& .MuiOutlinedInput-input': { color: theme.palette.text.primary },
                 }}
               />
             </Grid>
@@ -478,30 +414,21 @@ const CreateInvoice = () => {
                 helperText="Enter ERC20 token address for token payments"
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    bgcolor: 'rgba(15, 23, 42, 0.8)',
-                    '& fieldset': {
-                      borderColor: 'rgba(148, 163, 184, 0.3)',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: 'rgba(59, 130, 246, 0.5)',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#3b82f6',
-                    },
+                    background: theme.palette.mode === 'dark'
+                      ? 'linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.035) 100%)'
+                      : theme.palette.background.paper,
+                    backdropFilter: theme.palette.mode === 'dark' ? 'blur(14px) saturate(120%)' : undefined,
+                    WebkitBackdropFilter: theme.palette.mode === 'dark' ? 'blur(14px) saturate(120%)' : undefined,
+                    '& fieldset': { borderColor: theme.palette.divider },
+                    '&:hover fieldset': { borderColor: theme.palette.mode === 'dark' ? 'rgba(148,163,184,0.6)' : theme.palette.primary.light },
+                    '&.Mui-focused fieldset': { borderColor: theme.palette.mode === 'dark' ? 'rgba(148,163,184,0.9)' : theme.palette.primary.main },
                   },
                   '& .MuiInputLabel-root': {
-                    color: '#94a3b8',
-                    '&.Mui-focused': {
-                      color: '#3b82f6',
-                    },
+                    color: theme.palette.text.secondary,
+                    '&.Mui-focused': { color: theme.palette.primary.main },
                   },
-                  '& .MuiOutlinedInput-input': {
-                    color: '#f8fafc',
-                    fontFamily: 'monospace',
-                  },
-                  '& .MuiFormHelperText-root': {
-                    color: '#94a3b8',
-                  },
+                  '& .MuiOutlinedInput-input': { color: theme.palette.text.primary, fontFamily: 'monospace' },
+                  '& .MuiFormHelperText-root': { color: theme.palette.text.secondary },
                 }}
               />
             </Grid>
@@ -511,78 +438,78 @@ const CreateInvoice = () => {
       case 1:
         return (
           <Box>
-            <Typography variant="h6" gutterBottom sx={{ color: '#f8fafc', fontWeight: 600, mb: 3 }}>
+            <Typography variant="h6" gutterBottom sx={{ color: theme.palette.text.primary, fontWeight: 600, mb: 3 }}>
               Review Invoice Details & PDF Preview
             </Typography>
             
             <Grid container spacing={3}>
               <Grid item xs={12} sm={6}>
-                <Typography variant="h6" gutterBottom sx={{ color: '#f8fafc', fontWeight: 600, mb: 2 }}>
+                <Typography variant="h6" gutterBottom sx={{ color: theme.palette.text.primary, fontWeight: 600, mb: 2 }}>
                   Invoice Details
                 </Typography>
                 
                 <Box sx={{ mb: 2 }}>
-                  <Typography variant="subtitle2" sx={{ color: '#94a3b8', mb: 1 }}>
+                  <Typography variant="subtitle2" sx={{ color: theme.palette.text.secondary, mb: 1 }}>
                     Title
                   </Typography>
-                  <Typography variant="body1" sx={{ color: '#f8fafc', fontWeight: 500 }}>
+                  <Typography variant="body1" sx={{ color: theme.palette.text.primary, fontWeight: 500 }}>
                     {formData.title}
                   </Typography>
                 </Box>
 
                 <Box sx={{ mb: 2 }}>
-                  <Typography variant="subtitle2" sx={{ color: '#94a3b8', mb: 1 }}>
+                  <Typography variant="subtitle2" sx={{ color: theme.palette.text.secondary, mb: 1 }}>
                     Recipient Name
                   </Typography>
-                  <Typography variant="body1" sx={{ color: '#f8fafc', fontWeight: 500 }}>
+                  <Typography variant="body1" sx={{ color: theme.palette.text.primary, fontWeight: 500 }}>
                     {formData.recipientName}
                   </Typography>
                 </Box>
 
                 {formData.recipientEmail && (
                   <Box sx={{ mb: 2 }}>
-                    <Typography variant="subtitle2" sx={{ color: '#94a3b8', mb: 1 }}>
+                    <Typography variant="subtitle2" sx={{ color: theme.palette.text.secondary, mb: 1 }}>
                       Recipient Email
                     </Typography>
-                    <Typography variant="body1" sx={{ color: '#f8fafc' }}>
+                    <Typography variant="body1" sx={{ color: theme.palette.text.primary }}>
                       {formData.recipientEmail}
                     </Typography>
                   </Box>
                 )}
 
                 <Box sx={{ mb: 2 }}>
-                  <Typography variant="subtitle2" sx={{ color: '#94a3b8', mb: 1 }}>
+                  <Typography variant="subtitle2" sx={{ color: theme.palette.text.secondary, mb: 1 }}>
                     Recipient Address
                   </Typography>
-                  <Typography variant="body1" sx={{ color: '#f8fafc', fontFamily: 'monospace' }}>
+                  <Typography variant="body1" sx={{ color: theme.palette.text.primary, fontFamily: 'monospace' }}>
                     {formData.recipientAddress}
                   </Typography>
                 </Box>
 
                 <Box sx={{ mb: 2 }}>
-                  <Typography variant="subtitle2" sx={{ color: '#94a3b8', mb: 1 }}>
+                  <Typography variant="subtitle2" sx={{ color: theme.palette.text.secondary, mb: 1 }}>
                     Amount
                   </Typography>
-                  <Typography variant="body1" sx={{ color: '#f8fafc', fontWeight: 500 }}>
+                  <Typography variant="body1" sx={{ color: theme.palette.text.primary, fontWeight: 500 }}>
                     {formData.amount} ETH
                   </Typography>
                 </Box>
 
                 <Box sx={{ mb: 2 }}>
-                  <Typography variant="subtitle2" sx={{ color: '#94a3b8', mb: 1 }}>
+                  <Typography variant="subtitle2" sx={{ color: theme.palette.text.secondary, mb: 1 }}>
                     Due Date
                   </Typography>
-                  <Typography variant="body1" sx={{ color: '#f8fafc' }}>
+                  <Typography variant="body1" sx={{ color: theme.palette.text.primary }}>
                     {new Date(formData.dueDate).toLocaleDateString()}
                   </Typography>
                 </Box>
 
                 {formData.description && (
                   <Box sx={{ mb: 2 }}>
-                    <Typography variant="subtitle2" sx={{ color: '#94a3b8', mb: 1 }}>
+                    <Typography variant="subtitle2" sx={{ color: theme.palette.text.secondary, mb: 1 }}>
                       Description
                     </Typography>
-                    <Typography variant="body1" sx={{ color: '#f8fafc' }}>
+                    <Typography variant="body1" sx={{ color: theme.palette.text.primary }}>
                       {formData.description}
                     </Typography>
                   </Box>
@@ -590,7 +517,7 @@ const CreateInvoice = () => {
               </Grid>
 
               <Grid item xs={12} sm={6}>
-                <Typography variant="h6" gutterBottom sx={{ color: '#f8fafc', fontWeight: 600, mb: 2 }}>
+                <Typography variant="h6" gutterBottom sx={{ color: theme.palette.text.primary, fontWeight: 600, mb: 2 }}>
                   PDF Preview
                 </Typography>
                 
@@ -599,17 +526,17 @@ const CreateInvoice = () => {
                     <Paper
                       sx={{
                         p: 2,
-                        bgcolor: 'rgba(15, 23, 42, 0.8)',
-                        border: '1px solid rgba(148, 163, 184, 0.2)',
+                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(15,23,42,0.8)' : theme.palette.background.paper,
+                        border: `1px solid ${theme.palette.divider}`,
                         borderRadius: 2,
                         textAlign: 'center'
                       }}
                     >
-                      <Receipt sx={{ fontSize: 48, color: '#22c55e', mb: 1 }} />
-                      <Typography variant="body1" sx={{ color: '#f8fafc', mb: 2 }}>
+                      <Receipt sx={{ fontSize: 48, color: theme.palette.success.main, mb: 1 }} />
+                      <Typography variant="body1" sx={{ color: theme.palette.text.primary, mb: 2 }}>
                         PDF Generated Successfully
                       </Typography>
-                      <Typography variant="body2" sx={{ color: '#94a3b8', mb: 2 }}>
+                      <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
                         Size: {(pdfBlob.size / 1024).toFixed(1)} KB
                       </Typography>
                       <Button
@@ -621,11 +548,11 @@ const CreateInvoice = () => {
                           URL.revokeObjectURL(url);
                         }}
                         sx={{
-                          borderColor: '#3b82f6',
-                          color: '#3b82f6',
+                          borderColor: theme.palette.primary.main,
+                          color: theme.palette.primary.main,
                           '&:hover': {
-                            borderColor: '#2563eb',
-                            bgcolor: 'rgba(59, 130, 246, 0.1)'
+                            borderColor: theme.palette.primary.dark,
+                            bgcolor: theme.palette.action.hover
                           }
                         }}
                       >
@@ -637,11 +564,11 @@ const CreateInvoice = () => {
                   <Alert
                     severity="info"
                     sx={{
-                      bgcolor: 'rgba(59, 130, 246, 0.1)',
-                      border: '1px solid rgba(59, 130, 246, 0.2)',
-                      color: '#3b82f6',
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(59,130,246,0.12)' : theme.palette.action.hover,
+                      border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(59,130,246,0.25)' : theme.palette.primary.light}`,
+                      color: theme.palette.primary.main,
                       '& .MuiAlert-icon': {
-                        color: '#3b82f6'
+                        color: theme.palette.primary.main
                       }
                     }}
                   >
@@ -658,27 +585,20 @@ const CreateInvoice = () => {
     }
   };
 
+
   return (
-    <Box 
-      sx={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)',
-        p: 3
-      }}
-    >
+  <Box sx={{ minHeight: '100vh', backgroundColor: theme.palette.background.default, p: { xs: 2, md: 3 } }}>
       <Typography 
         variant="h4" 
         component="h1" 
         gutterBottom
         sx={{ 
-          color: '#f8fafc', 
+          color: theme.palette.text.primary, 
           fontWeight: 700,
-          mb: 4,
-          textAlign: 'center',
-          background: 'linear-gradient(90deg, #f8fafc 0%, #60a5fa 50%, #f8fafc 100%)',
-          backgroundClip: 'text',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent'
+            mb: 4,
+          textAlign: 'left',
+          width: '100%',
+          ml: { xs: 7, sm: 9, md: 31 }, // increased right shift
         }}
       >
         Create New Invoice
@@ -686,13 +606,21 @@ const CreateInvoice = () => {
 
       <Card 
         sx={{
-          maxWidth: 800,
+          maxWidth: 880, // increased width slightly
+          width: '100%',
           mx: 'auto',
-          background: 'linear-gradient(145deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
+          transform: { xs: 'translateX(-22px)', sm: 'translateX(-36px)', md: 'translateX(-50px)' }, // slightly more left shift
+          transition: 'transform .3s ease',
+          background: theme.palette.mode === 'dark'
+            ? 'linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.045) 100%)'
+            : 'linear-gradient(145deg, rgba(255,255,255,0.9) 0%, rgba(241,245,249,0.9) 100%)',
           borderRadius: 3,
-          border: '1px solid rgba(148, 163, 184, 0.2)',
-          boxShadow: '0 25px 50px rgba(0, 0, 0, 0.25)',
-          backdropFilter: 'blur(20px)',
+          border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(148, 163, 184, 0.2)' : 'rgba(203, 213, 225, 0.6)'}`,
+          boxShadow: theme.palette.mode === 'dark'
+            ? '0 25px 50px rgba(0,0,0,0.35)'
+            : '0 10px 30px rgba(0,0,0,0.08)',
+          backdropFilter: 'blur(26px) saturate(120%)',
+          WebkitBackdropFilter: 'blur(26px) saturate(120%)',
           position: 'relative',
           '&::before': {
             content: '""',
@@ -701,7 +629,7 @@ const CreateInvoice = () => {
             left: 0,
             right: 0,
             height: '2px',
-            background: 'linear-gradient(90deg, transparent, #3b82f6, transparent)',
+            background: `linear-gradient(90deg, transparent, ${theme.palette.primary.main}, transparent)`,
           }
         }}
       >
@@ -711,21 +639,21 @@ const CreateInvoice = () => {
             sx={{ 
               mb: 4,
               '& .MuiStepLabel-label': {
-                color: '#94a3b8',
+                color: theme.palette.text.secondary,
                 '&.Mui-active': {
-                  color: '#3b82f6'
+                  color: theme.palette.primary.main
                 },
                 '&.Mui-completed': {
-                  color: '#22c55e'
+                  color: theme.palette.success.main
                 }
               },
               '& .MuiStepIcon-root': {
-                color: 'rgba(148, 163, 184, 0.5)',
+                color: theme.palette.mode === 'dark' ? 'rgba(148,163,184,0.5)' : theme.palette.action.disabled,
                 '&.Mui-active': {
-                  color: '#3b82f6'
+                  color: theme.palette.primary.main
                 },
                 '&.Mui-completed': {
-                  color: '#22c55e'
+                  color: theme.palette.success.main
                 }
               }
             }}
@@ -739,19 +667,19 @@ const CreateInvoice = () => {
 
           {renderStepContent(activeStep)}
 
-          <Divider sx={{ my: 3, borderColor: 'rgba(148, 163, 184, 0.2)' }} />
+          <Divider sx={{ my: 3, borderColor: theme.palette.divider }} />
 
           <Box display="flex" justifyContent="space-between">
             <Button
               disabled={activeStep === 0}
               onClick={handleBack}
               sx={{
-                color: '#94a3b8',
+                color: theme.palette.text.secondary,
                 '&:hover': {
-                  bgcolor: 'rgba(148, 163, 184, 0.1)'
+                  bgcolor: theme.palette.action.hover
                 },
                 '&:disabled': {
-                  color: 'rgba(148, 163, 184, 0.3)'
+                  color: theme.palette.action.disabled
                 }
               }}
             >
@@ -765,8 +693,8 @@ const CreateInvoice = () => {
                 disabled={loading}
                 startIcon={loading ? <CircularProgress size={20} /> : <Send />}
                 sx={{
-                  bgcolor: 'rgba(59, 130, 246, 0.9)',
-                  '&:hover': { bgcolor: '#3b82f6' },
+                  bgcolor: theme.palette.primary.main,
+                  '&:hover': { bgcolor: theme.palette.primary.dark },
                   fontWeight: 600,
                   textTransform: 'none'
                 }}
@@ -780,8 +708,8 @@ const CreateInvoice = () => {
                 disabled={generatingPDF}
                 startIcon={generatingPDF ? <CircularProgress size={20} /> : <Receipt />}
                 sx={{
-                  bgcolor: 'rgba(59, 130, 246, 0.9)',
-                  '&:hover': { bgcolor: '#3b82f6' },
+                  bgcolor: theme.palette.primary.main,
+                  '&:hover': { bgcolor: theme.palette.primary.dark },
                   fontWeight: 600,
                   textTransform: 'none'
                 }}
