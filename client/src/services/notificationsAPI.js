@@ -36,23 +36,30 @@ const notificationsAPI = {
   // Low-level test sender (maps to server /api/notifications/test)
   sendTestEmail: ({ to, subject, html }) => api.post('/test', { to, subject, html }),
 
-  // High-level helper used by UI
-  sendInvoiceEmail: async (invoiceId, toEmail) => {
-    if (!toEmail || !toEmail.includes('@')) {
+  // High-level helper: build email locally then send via /test route
+  sendInvoiceEmail: async (invoiceId, toEmail, options = {}) => {
+    const overrideEmail = toEmail || options.overrideEmail;
+    if (!overrideEmail || !overrideEmail.includes('@')) {
       throw new Error('Valid recipient email required');
+    }
+    // If backend has a dedicated endpoint (dev branch feature), try it first
+    if (options.useServerTemplate) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/notifications/send-invoice-email`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ invoiceId, overrideEmail }),
+        });
+        if (res.ok) return res.json();
+      } catch (_) {
+        // fallback to local template path below
+      }
     }
     const subject = `Invoice ${invoiceId}`;
     const origin = typeof window !== 'undefined' ? window.location.origin : (process.env.REACT_APP_CLIENT_URL || 'http://localhost:3000');
     const invoiceLink = `${origin}/invoice/${invoiceId}`;
-    const html = `
-      <div style="font-family:Segoe UI,Roboto,Arial,sans-serif;line-height:1.5;color:#111">
-        <h3 style="margin:0 0 12px">Invoice ${invoiceId}</h3>
-        <p>You have a new invoice. View it at the link below:</p>
-        <p><a href="${invoiceLink}" style="display:inline-block;padding:10px 14px;background:#4f46e5;color:#fff;text-decoration:none;border-radius:6px">View Invoice</a></p>
-        <p style="font-size:12px;color:#666;margin-top:16px">Sent via Invoice Chain</p>
-      </div>
-    `;
-    return notificationsAPI.sendTestEmail({ to: toEmail, subject, html });
+    const html = `\n      <div style="font-family:Segoe UI,Roboto,Arial,sans-serif;line-height:1.5;color:#111">\n        <h3 style="margin:0 0 12px">Invoice ${invoiceId}</h3>\n        <p>You have a new invoice. View it at the link below:</p>\n        <p><a href="${invoiceLink}" style="display:inline-block;padding:10px 14px;background:#4f46e5;color:#fff;text-decoration:none;border-radius:6px">View Invoice</a></p>\n        <p style="font-size:12px;color:#666;margin-top:16px">Sent via Invoice Chain</p>\n      </div>\n    `;
+    return notificationsAPI.sendTestEmail({ to: overrideEmail, subject, html });
   }
 };
 

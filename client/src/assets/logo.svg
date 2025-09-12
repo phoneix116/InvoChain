@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 180" fill="none">
+	<!-- Stylized INVOCHAIN wordmark approximation based on provided image -->
+	<g fill="#1E2430" font-family="Inter,Arial,sans-serif" font-weight="700" font-size="140" letter-spacing="18">
+		<text x="0" y="130">INV</text>
+		<text x="350" y="130">CHAIN</text>
+	</g>
+	<!-- Chain link center (approx) -->
+	<g stroke="#1E2430" stroke-width="14" stroke-linecap="round" stroke-linejoin="round">
+		<path d="M300 68c18-26 54-26 72 0 4 6 4 14 0 20-18 26-54 26-72 0-4-6-4-14 0-20z" fill="none"/>
+		<path d="M312 80c10-14 30-14 40 0 3 4 3 10 0 14-10 14-30 14-40 0-3-4-3-10 0-14z" fill="none"/>
+	</g>
+</svg>
