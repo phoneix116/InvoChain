@@ -36,7 +36,20 @@ const Login = () => {
 
   return (
     <Box display="flex" justifyContent="center" alignItems="center" minHeight="70vh">
-      <Card sx={{ width: '100%', maxWidth: 720, background: 'rgba(15,23,42,0.6)' }}>
+      <Card sx={{ 
+        width: '100%', 
+        maxWidth: 720, 
+        // Remove heavy opaque dark overlay; use subtle translucent surface
+        background: (theme) => theme.palette.mode === 'dark' 
+          ? 'rgba(30,41,59,0.35)' 
+          : 'rgba(255,255,255,0.85)',
+        backdropFilter: 'blur(18px) saturate(140%)',
+        WebkitBackdropFilter: 'blur(18px) saturate(140%)',
+        border: (theme) => `1px solid ${theme.palette.divider}`,
+        boxShadow: (theme) => theme.palette.mode === 'dark'
+          ? '0 12px 32px -4px rgba(0,0,0,0.55)'
+          : '0 8px 24px -4px rgba(0,0,0,0.12)'
+      }}>
         <CardContent>
           <Typography variant="h5" gutterBottom sx={{ fontWeight: 700 }}>Welcome</Typography>
           <Typography variant="body2" color="text.secondary" gutterBottom>
