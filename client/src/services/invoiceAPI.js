@@ -423,37 +423,46 @@ const invoiceAPI = {
   // Generate PDF preview without uploading to IPFS
   previewInvoicePDF: async (invoiceData) => {
     const { recipientAddress, recipientName, recipientEmail, amount, description, dueDate, title } = invoiceData;
-
-    const response = await fetch(`${API_BASE_URL}/api/invoice/preview`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        recipientAddress,
-        recipientName,
-        recipientEmail,
-        amount: amount.toString(),
-        description,
-        dueDate: new Date(dueDate).toISOString(),
-        title: title || 'Blockchain Invoice',
-      }),
-    });
-
-    if (!response.ok) {
-      let msg = 'Failed to generate PDF preview';
-      try {
-        const err = await response.json();
-        if (err?.details) {
-          msg = `${msg}: ${Array.isArray(err.details) ? err.details.join('; ') : err.details}`;
-        } else if (err?.message) {
-          msg = `${msg}: ${err.message}`;
+    const payload = {
+      recipientAddress,
+      recipientName,
+      recipientEmail,
+      amount: amount.toString(),
+      description,
+      dueDate: new Date(dueDate).toISOString(),
+      title: title || 'Blockchain Invoice',
+    };
+    // Try axios first so interceptor can attach token
+    try {
+      const resp = await api.post('/preview', payload, { responseType: 'blob' });
+      return resp; // interceptor response transform returns .data, so blob
+    } catch (e) {
+      // If 401 due to potential race (token not yet available) attempt one short retry after waiting
+      if (e.message && e.message.toLowerCase().includes('unauthorized')) {
+        try {
+          const auth = getFirebaseAuth();
+          if (auth && !auth.currentUser) {
+            await waitForAuthUser(auth);
+          }
+          // Manual fetch with explicit token in case axios interceptor missed it
+          let headers = { 'Content-Type': 'application/json' };
+          const user = auth && auth.currentUser;
+          if (user) {
+            try { headers.Authorization = `Bearer ${await getIdToken(user, true)}`; } catch (_) {}
+          }
+          const fallback = await fetch(`${API_BASE_URL}/api/invoice/preview`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(payload)
+          });
+          if (!fallback.ok) throw new Error('Failed to generate PDF preview');
+          return await fallback.blob();
+        } catch (retryErr) {
+          throw retryErr;
         }
-      } catch {}
-      throw new Error(msg);
+      }
+      throw e;
     }
-
-    return response.blob();
   },
 
   // Error handling wrapper
