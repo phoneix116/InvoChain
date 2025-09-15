@@ -30,7 +30,7 @@ export default function Profile() {
   // Allow access if either Firebase is authenticated OR wallet is connected (wallet-first flow)
   if (!isAuthenticated && !account) return <Navigate to="/login" replace />;
 
-  const verified = !!userInfo?.verifiedWallet;
+  const verified = !!userInfo?.verifiedWallet; // retained for potential future use (no chip shown)
   const stats = userInfo?.stats || {};
 
   const isDark = theme.palette.mode === 'dark';
@@ -78,23 +78,7 @@ export default function Profile() {
     ? 'linear-gradient(145deg, rgba(99,102,241,0.30) 0%, rgba(99,102,241,0.12) 100%)'
     : 'linear-gradient(145deg, rgba(59,130,246,0.28) 0%, rgba(59,130,246,0.08) 100%)';
 
-  const verifiedStyles = verified
-    ? {
-        label: 'Verified',
-        sx: {
-          bgcolor: isDark ? 'rgba(34,197,94,0.15)' : 'rgba(34,197,94,0.12)',
-          color: '#22c55e',
-          border: '1px solid rgba(34,197,94,0.3)'
-        }
-      }
-    : {
-        label: 'Unverified',
-        sx: {
-          bgcolor: isDark ? 'rgba(239,68,68,0.15)' : 'rgba(239,68,68,0.10)',
-          color: '#ef4444',
-          border: '1px solid rgba(239,68,68,0.3)'
-        }
-      };
+  // Removed verification chip display
 
   return (
   <Box sx={{ 
@@ -142,9 +126,7 @@ export default function Profile() {
             <Typography variant="h5" sx={{ fontWeight: 700 }}>{'Profile'}</Typography>
             <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>{userInfo?.email || user?.email || 'Wallet-only'}</Typography>
           </Box>
-          <Box sx={{ ml: 'auto' }}>
-            <Chip label={verifiedStyles.label} size="small" sx={verifiedStyles.sx} />
-          </Box>
+          {/* Verification chip removed */}
         </Box>
 
         <Grid container spacing={2.5} sx={{

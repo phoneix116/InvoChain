@@ -16,6 +16,9 @@ server/package-lock.json
 .env.production.local
 client/.env
 server/.env
+.env.example
+client/.env.example
+server/.env.example
 
 # Build outputs
 build/

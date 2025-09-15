@@ -190,11 +190,7 @@ const ProfileForm = () => {
       <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
         <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>Wallet:</Typography>
         <Typography variant="body2" sx={{ color: theme.palette.text.primary, fontWeight: 600 }}>{formatAddress(account)}</Typography>
-        {verified ? (
-          <Chip size="small" label="Verified" sx={{ bgcolor: theme.palette.mode==='dark' ? 'rgba(34,197,94,0.15)' : 'rgba(34,197,94,0.12)', color: theme.palette.success.main, border: `1px solid ${theme.palette.success.main}55` }} />
-        ) : (
-          <Chip size="small" label="Unverified" sx={{ bgcolor: theme.palette.mode==='dark' ? 'rgba(220,38,38,0.15)' : 'rgba(220,38,38,0.12)', color: theme.palette.error.main, border: `1px solid ${theme.palette.error.main}55` }} />
-        )}
+        {/* Verification status chip removed */}
       </Box>
 
       <Grid container spacing={2}>

@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import logo from '../../assets/logo.png';
 import { AppBar, Box, CssBaseline, Drawer, IconButton, List, ListItem, ListItemButton, ListItemIcon, Toolbar, Typography, Button, Chip, Avatar, Menu, MenuItem, useTheme } from '@mui/material';
 import { Menu as MenuIcon, Dashboard, Add, Receipt, Analytics, Settings, AccountBalanceWallet, Logout, ContentCopy } from '@mui/icons-material';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useWallet } from '../../contexts/WalletContext';
 import { useInvoice } from '../../contexts/InvoiceContext';
 import { useAuth } from '../../contexts/AuthContext';
+import useUnifiedAuth from '../../hooks/useUnifiedAuth';
+import Login from '../../pages/Login';
 import { toast } from 'react-toastify';
 
 // Increased sidebar width
@@ -44,10 +46,26 @@ const Layout = ({ children }) => {
 	// Keep almost no space at the bottom across pages
 	const pageBottomPadding = 0;
 	const { account, balance, network, isConnected, connectWallet, disconnectWallet, formatAddress, isConnecting } = useWallet();
-	const { user, logout: logoutAuth, loading: authLoading } = useAuth();
+	const { user, loading: authLoading } = useAuth();
+	// Need all unified auth actions & state; missing ones caused runtime ReferenceError (blank screen)
+	const { unifiedSignIn, unifiedSignOut, signingIn, signingOut, unifiedAuthBusy } = useUnifiedAuth();
 	const { userInfo, verifyWalletOwnership } = useInvoice();
 
 	const [mobileOpen, setMobileOpen] = useState(false);
+
+	// Determine if we should show the auth overlay: require BOTH wallet connection and Firebase user
+	const fullyAuthed = !!user && isConnected;
+	const showAuthOverlay = !authLoading && !fullyAuthed;
+
+	// Lock body scroll while overlay is active
+	useEffect(() => {
+		if (showAuthOverlay) {
+			document.body.style.overflow = 'hidden';
+			return () => { document.body.style.overflow = ''; };
+		} else {
+			document.body.style.overflow = '';
+		}
+	}, [showAuthOverlay]);
 	const [anchorEl, setAnchorEl] = useState(null);
 
 	const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
@@ -138,6 +156,7 @@ const Layout = ({ children }) => {
 		</Box>
 	);
 
+	const content = children || <Outlet />;
 	return (
 		<Box sx={{ display: 'flex' }}>
 			<CssBaseline />
@@ -214,13 +233,7 @@ const Layout = ({ children }) => {
 												// No separate floating background container now
 											}}
 										>
-												{network && (
-													<Chip
-														label={network.name}
-														size="small"
-														sx={{ bgcolor: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.3)', fontWeight: 600 }}
-													/>
-												)}
+												{/* Network chip removed */}
 							{isConnected ? (
 								<>
 														<Typography variant="body2" sx={{ display: { xs: 'none', lg: 'block' }, color: theme.palette.text.secondary, fontWeight: 500, minWidth: 86 }}>
@@ -265,45 +278,21 @@ const Layout = ({ children }) => {
 											{formatAddress(account)}
 										</Typography>
 									</Button>
-									{userInfo?.verifiedWallet ? (
-										<Chip label="Verified" size="small" sx={{ bgcolor: 'rgba(34,197,94,0.15)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.3)' }} />
-									) : (
-										<Button
-											variant="outlined"
-											size="small"
-											onClick={verifyWalletOwnership}
-											sx={{
-												borderColor: 'rgba(34,197,94,0.3)',
-												color: '#22c55e',
-												backgroundColor: 'rgba(34,197,94,0.15)',
-												fontWeight: 600,
-												textTransform: 'none',
-												borderRadius: '24px',
-												px: 2.9,
-												py: 0.85,
-												fontSize: '0.9rem',
-												'&:hover': {
-													backgroundColor: 'rgba(34,197,94,0.22)',
-													borderColor: 'rgba(34,197,94,0.45)'
-												}
-											}}
-										>
-											Verify
-										</Button>
-									)}
+									{/* Wallet verification UI removed */}
 									{user ? (
 										<>
 											<Button onClick={() => navigate('/profile')} sx={{ color: theme.palette.text.primary, textTransform: 'none', fontWeight: 600 }} title="Open Profile">
 												{userInfo?.name || user?.displayName || user?.email?.split('@')[0] || formatAddress(account) || 'Profile'}
 											</Button>
-											<Chip label="Linked" size="small" sx={{ bgcolor: theme.palette.mode === 'dark' ? 'rgba(148,163,184,0.15)' : 'rgba(0,0,0,0.08)', color: theme.palette.text.secondary, border: `1px solid ${theme.palette.divider}` }} />
+											{/* Linked status chip removed */}
 											<Button
-												onClick={logoutAuth}
+												onClick={unifiedSignOut}
 												color="inherit"
 												variant="outlined"
 												size="small"
 												startIcon={<Logout fontSize="small" />}
 												aria-label="Sign out"
+												disabled={signingOut}
 												sx={{
 													fontWeight: 600,
 													letterSpacing: 0.3,
@@ -312,24 +301,24 @@ const Layout = ({ children }) => {
 													py: 0.8,
 													lineHeight: 1.05,
 													borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.28)',
-													color: theme.palette.mode === 'dark' ? theme.palette.text.primary : '#dc2626',
+													color: signingOut ? theme.palette.text.disabled : (theme.palette.mode === 'dark' ? theme.palette.text.primary : '#dc2626'),
 													backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(220,38,38,0.08)',
 													textTransform: 'none',
 													fontSize: '0.8rem',
 													backdropFilter: 'blur(6px)',
 													transition: 'all .25s ease',
-													'&:hover': {
+													'&:hover': !signingOut ? {
 														borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.45)' : '#dc2626',
 														backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(220,38,38,0.16)',
 														transform: 'translateY(-1px)',
 														boxShadow: theme.palette.mode === 'dark'
 															? '0 4px 12px rgba(0,0,0,0.5)'
 															: '0 4px 12px rgba(0,0,0,0.18)'
-													},
+													} : undefined,
 													'& .MuiButton-startIcon': { mr: 0.4 }
 												}}
 											>
-												Sign out
+												{signingOut ? 'Signing out…' : 'Sign out'}
 											</Button>
 										</>
 									) : (
@@ -343,14 +332,14 @@ const Layout = ({ children }) => {
 												fontWeight: 600,
 												textTransform: 'none',
 												borderRadius: '24px',
-												px: 2.4,
-												py: 0.9,
+												px: 2.6,
+												py: 0.95,
 												fontSize: '0.9rem',
 												boxShadow: theme.palette.mode === 'dark' ? '0 4px 12px rgba(0,0,0,0.4)' : '0 4px 12px rgba(0,0,0,0.15)',
 												'&:hover': { boxShadow: theme.palette.mode === 'dark' ? '0 6px 16px rgba(0,0,0,0.55)' : '0 6px 18px rgba(0,0,0,0.2)' }
 											}}
 										>
-											{authLoading ? 'Auth…' : 'Sign in'}
+											{authLoading ? 'Loading…' : 'Sign in'}
 										</Button>
 									)}
 									<Menu
@@ -370,25 +359,27 @@ const Layout = ({ children }) => {
 									</Menu>
 								</>
 							) : (
-								<Button
-									color="inherit"
-									variant="outlined"
-									startIcon={<AccountBalanceWallet />}
-									onClick={connectWallet}
-									disabled={isConnecting}
-									sx={{
-										borderColor: theme.palette.divider,
-										color: theme.palette.text.primary,
-										borderRadius: 2,
-										textTransform: 'none',
-										fontWeight: 600,
-										'&:hover': { borderColor: theme.palette.text.secondary, bgcolor: theme.palette.mode === 'dark' ? 'rgba(148,163,184,0.1)' : 'rgba(0,0,0,0.04)', transform: 'translateY(-1px)', boxShadow: theme.palette.mode === 'dark' ? '0 4px 12px rgba(148,163,184,0.2)' : '0 4px 12px rgba(0,0,0,0.15)' },
-										'&:disabled': { borderColor: 'rgba(148, 163, 184, 0.3)', color: 'rgba(148, 163, 184, 0.5)' },
-										transition: 'all 0.3s ease'
-									}}
-								>
-									{isConnecting ? 'Connecting...' : 'Connect Wallet'}
-								</Button>
+									<Button
+                                    color="inherit"
+                                    variant="outlined"
+                                    startIcon={<AccountBalanceWallet />}
+                                    onClick={unifiedSignIn}
+                                    disabled={signingIn || unifiedAuthBusy}
+                                    sx={{
+                                        borderColor: theme.palette.divider,
+                                        color: theme.palette.text.primary,
+                                        borderRadius: 2,
+                                        textTransform: 'none',
+                                        fontWeight: 600,
+                                        px: 2.4,
+                                        py: 0.85,
+                                        '&:hover': { borderColor: theme.palette.text.secondary, bgcolor: theme.palette.mode === 'dark' ? 'rgba(148,163,184,0.1)' : 'rgba(0,0,0,0.05)', transform: 'translateY(-1px)', boxShadow: theme.palette.mode === 'dark' ? '0 4px 12px rgba(148,163,184,0.2)' : '0 4px 12px rgba(0,0,0,0.15)' },
+                                        '&:disabled': { borderColor: theme.palette.divider, color: theme.palette.text.disabled },
+                                        transition: 'all 0.3s ease'
+                                    }}
+                                >
+                                    {(signingIn || unifiedAuthBusy) ? 'Signing in…' : 'Sign in'}
+                                </Button>
 							)}
 						</Box>
 					</Box>
@@ -414,9 +405,51 @@ const Layout = ({ children }) => {
 				</Drawer>
 			</Box>
 			{/* Adjust main content to match reduced gap */}
-			<Box component="main" sx={{ flexGrow: 1, width: { sm: `calc(100% - ${mainLeftOffset}px)` }, ml: { sm: `${mainLeftOffset}px` }, pt: 2, pr: 2, pb: pageBottomPadding, pl: pageLeftPadding, boxSizing: 'border-box', position: 'relative', backgroundColor: theme.palette.background.default, borderRadius: { sm: '0 0 0 32px' } }}>
-				<Box sx={{ mt: 8 }}>{children}</Box>
+			<Box component="main" sx={{ flexGrow: 1, width: { sm: `calc(100% - ${mainLeftOffset}px)` }, ml: { sm: `${mainLeftOffset}px` }, pt: 2, pr: 2, pb: pageBottomPadding, pl: pageLeftPadding, boxSizing: 'border-box', position: 'relative', backgroundColor: theme.palette.background.default, borderRadius: { sm: '0 0 0 32px' }, filter: showAuthOverlay ? 'blur(2px) saturate(0.85)' : 'none', transition: 'filter 0.4s ease' }} aria-hidden={showAuthOverlay ? 'true' : 'false'}>
+				<Box sx={{ mt: 8 }}>{content}</Box>
 			</Box>
+
+			{/* Full-screen auth overlay (glass) */}
+			{showAuthOverlay && (
+				<Box
+					sx={{
+						position: 'fixed',
+						inset: 0,
+						zIndex: (theme) => theme.zIndex.drawer + 500,
+						display: 'flex',
+						alignItems: 'center',
+						justifyContent: 'center',
+						p: { xs: 2.5, sm: 4 },
+						background: theme.palette.mode === 'dark'
+							? 'linear-gradient(135deg, rgba(10,12,16,0.82) 0%, rgba(18,22,28,0.78) 60%, rgba(24,28,34,0.85) 100%)'
+							: 'linear-gradient(135deg, rgba(240,245,255,0.86) 0%, rgba(250,252,255,0.82) 60%, rgba(255,255,255,0.90) 100%)',
+						backdropFilter: 'blur(28px) saturate(1.8)',
+						WebkitBackdropFilter: 'blur(28px) saturate(1.8)',
+						'&:before': {
+							content: '""',
+							position: 'absolute',
+							inset: 0,
+							background: theme.palette.mode === 'dark'
+								? 'radial-gradient(circle at 25% 20%, rgba(255,255,255,0.08), transparent 55%), radial-gradient(circle at 75% 70%, rgba(255,255,255,0.05), transparent 60%)'
+								: 'radial-gradient(circle at 25% 20%, rgba(0,0,0,0.08), transparent 55%), radial-gradient(circle at 75% 70%, rgba(0,0,0,0.04), transparent 60%)',
+							pointerEvents: 'none'
+						},
+						'&:after': {
+							content: '""',
+							position: 'absolute',
+							inset: 0,
+							backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'1600\' height=\'900\' viewBox=\'0 0 1600 900\'%3E%3Cdefs%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.8\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/defs%3E%3Crect width=\'1600\' height=\'900\' filter=\'url(%23n)\' opacity=\'0.18\'/%3E%3C/svg%3E")',
+							opacity: theme.palette.mode === 'dark' ? 0.22 : 0.12,
+							mixBlendMode: theme.palette.mode === 'dark' ? 'screen' : 'multiply',
+							pointerEvents: 'none'
+						}
+					}}
+				>
+					<Box sx={{ position: 'relative', width: '100%', maxWidth: 640 }}>
+						<Login embedded />
+					</Box>
+				</Box>
+			)}
 		</Box>
 	);
 };
