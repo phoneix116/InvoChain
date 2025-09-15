@@ -297,7 +297,40 @@ const Layout = ({ children }) => {
 												{userInfo?.name || user?.displayName || user?.email?.split('@')[0] || formatAddress(account) || 'Profile'}
 											</Button>
 											<Chip label="Linked" size="small" sx={{ bgcolor: theme.palette.mode === 'dark' ? 'rgba(148,163,184,0.15)' : 'rgba(0,0,0,0.08)', color: theme.palette.text.secondary, border: `1px solid ${theme.palette.divider}` }} />
-											<Button onClick={logoutAuth} color="inherit" variant="outlined" size="small" sx={{ fontWeight: 600 }}>Out</Button>
+											<Button
+												onClick={logoutAuth}
+												color="inherit"
+												variant="outlined"
+												size="small"
+												startIcon={<Logout fontSize="small" />}
+												aria-label="Sign out"
+												sx={{
+													fontWeight: 600,
+													letterSpacing: 0.3,
+													borderRadius: '24px',
+													px: 2.2,
+													py: 0.8,
+													lineHeight: 1.05,
+													borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.28)',
+													color: theme.palette.mode === 'dark' ? theme.palette.text.primary : '#dc2626',
+													backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(220,38,38,0.08)',
+													textTransform: 'none',
+													fontSize: '0.8rem',
+													backdropFilter: 'blur(6px)',
+													transition: 'all .25s ease',
+													'&:hover': {
+														borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.45)' : '#dc2626',
+														backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(220,38,38,0.16)',
+														transform: 'translateY(-1px)',
+														boxShadow: theme.palette.mode === 'dark'
+															? '0 4px 12px rgba(0,0,0,0.5)'
+															: '0 4px 12px rgba(0,0,0,0.18)'
+													},
+													'& .MuiButton-startIcon': { mr: 0.4 }
+												}}
+											>
+												Sign out
+											</Button>
 										</>
 									) : (
 										<Button
