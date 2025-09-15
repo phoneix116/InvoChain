@@ -1,5 +1,23 @@
-// Load environment variables
-require('dotenv').config();
+// Load environment variables (prefer server/.env; fallback to root)
+(() => {
+  const path = require('path');
+  const fs = require('fs');
+  const dotenv = require('dotenv');
+  const serverEnv = path.join(__dirname, '.env');
+  const rootEnv = path.join(__dirname, '..', '.env');
+  let loaded = false;
+  if (fs.existsSync(serverEnv)) {
+    dotenv.config({ path: serverEnv });
+    loaded = true;
+  }
+  if (!loaded && fs.existsSync(rootEnv)) {
+    dotenv.config({ path: rootEnv });
+    loaded = true;
+  }
+  if (!loaded) {
+    dotenv.config(); // default search
+  }
+})();
 
 const express = require('express');
 const cors = require('cors');
@@ -59,7 +77,8 @@ const app = express();
 // Security middleware
 app.use(helmet({
   contentSecurityPolicy: false,
-  crossOriginEmbedderPolicy: false
+  crossOriginEmbedderPolicy: false,
+  crossOriginOpenerPolicy: false // Allow Firebase auth popup to close properly
 }));
 
 // Rate limiting - More permissive for development
@@ -130,16 +149,51 @@ try {
       });
     }
 
+    const publicInvoicePatterns = [
+      /^\/users\/profile$/i,              // POST createOrGetUser profile endpoint
+      /^\/users\/[^/]+$/i,                // GET user profile by wallet
+      /^\/users\/[^/]+\/verify\/nonce$/i, // POST nonce issuance
+      /^\/users\/[^/]+\/verify$/i         // POST wallet signature verify
+    ];
+
+    // Optionally allow public search/preview for experimentation (no auth needed)
+    if (process.env.INVOICE_PUBLIC_SEARCH === 'true') {
+      publicInvoicePatterns.push(/^\/search$/i);
+      publicInvoicePatterns.push(/^\/preview$/i);
+      if (process.env.LOG_AUTH_DECISIONS === 'true') {
+        console.log('[auth] INVOICE_PUBLIC_SEARCH enabled: /search and /preview are public');
+      }
+    }
+
     verifyFirebaseToken = async (req, res, next) => {
-      const authHeader = req.headers.authorization || '';
-      const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
-      if (!token) return res.status(401).json({ error: 'Unauthorized' });
+      // Production-lite middleware (debug logs stripped)
+      // Derive sub-path relative to /api/invoice
+      const full = req.originalUrl || req.url || '';
+      const pathOnly = full.split('?')[0];
+      const relative = pathOnly.replace(/^\/api\/invoice/, '') || '/';
+      const relClean = relative.startsWith('/') ? relative : '/' + relative;
+
+      const isPublic = publicInvoicePatterns.some(r => r.test(relClean));
+      if (isPublic) return next();
+
       try {
-        const decoded = await admin.auth().verifyIdToken(token);
+        const authHeader = req.headers.authorization || '';
+        if (!authHeader) return res.status(401).json({ error: 'Unauthorized: missing Authorization header' });
+        if (!authHeader.startsWith('Bearer ')) return res.status(401).json({ error: 'Unauthorized: malformed Authorization header' });
+        const token = authHeader.slice(7);
+        if (token.length < 10) return res.status(401).json({ error: 'Unauthorized: invalid token length' });
+
+        let decoded;
+        try {
+          decoded = await admin.auth().verifyIdToken(token);
+        } catch (verifyErr) {
+          return res.status(401).json({ error: 'Invalid token' });
+        }
         req.user = decoded;
-        next();
+        return next();
       } catch (e) {
-        return res.status(401).json({ error: 'Invalid token' });
+        // Silently fail with generic unauthorized to avoid leaking details
+        return res.status(401).json({ error: 'Unauthorized' });
       }
     };
   } else {
@@ -169,6 +223,8 @@ app.get('/api/auth/me', verifyFirebaseToken, (req, res) => {
     exp: u.exp
   });
 });
+
+// Debug: inspect raw bearer token header (do NOT enable in production)
 
 // Health check endpoint with database status
 app.get('/health', async (req, res) => {

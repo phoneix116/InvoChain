@@ -535,6 +535,8 @@ const Dashboard = () => {
                             </Typography>
                           </Box>
                         }
+                        primaryTypographyProps={{ component: 'div' }}
+                        secondaryTypographyProps={{ component: 'div' }}
                       />
                     </ListItem>
                   ))}

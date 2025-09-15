@@ -2,7 +2,18 @@ import axios from 'axios';
 import getFirebaseAuth from './firebase';
 import { getIdToken } from 'firebase/auth';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3002';
+// Small helper to wait briefly for Firebase user on initial race conditions
+async function waitForAuthUser(auth, { maxMs = 800, interval = 50 } = {}) {
+  if (!auth) return null;
+  const start = Date.now();
+  while (!auth.currentUser && (Date.now() - start) < maxMs) {
+    await new Promise(r => setTimeout(r, interval));
+  }
+  return auth.currentUser;
+}
+
+// Default to 3001 where the Express server runs (was 3002 causing mismatched base URL when env unset)
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 const api = axios.create({
   baseURL: `${API_BASE_URL}/api/invoice`,
@@ -16,13 +27,25 @@ const api = axios.create({
 api.interceptors.request.use(async (config) => {
   try {
     const auth = getFirebaseAuth();
-    const user = auth && auth.currentUser;
-    if (user) {
-      const token = await getIdToken(user, true);
-      config.headers = config.headers || {};
-      config.headers.Authorization = `Bearer ${token}`;
+    let user = auth && auth.currentUser;
+
+    // If this is an invoice search and no user yet, briefly wait (race mitigation)
+    if (!user && config.url && /\/search(\?|$)/.test(config.url)) {
+      user = await waitForAuthUser(auth);
     }
-  } catch {}
+
+    if (user) {
+      try {
+        const token = await getIdToken(user, true);
+        config.headers = config.headers || {};
+        config.headers.Authorization = `Bearer ${token}`;
+      } catch (_) {
+        // silent token fetch failure
+      }
+    }
+  } catch (e) {
+    // silent
+  }
   return config;
 });
 

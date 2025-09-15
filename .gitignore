@@ -147,6 +147,8 @@ ganache-db/
 *.p12
 *.key
 *.p8
+server/config/serviceAccountKey.json
+server/serviceAccountKey.json
 
 # Database files
 *.db

@@ -48,6 +48,16 @@ export function getFirebaseAuth() {
       if (!config) return null;
       app = initializeApp(config);
       auth = getAuth(app);
+      if (process.env.REACT_APP_DEBUG_AUTH === 'true' && typeof window !== 'undefined') {
+        window._auth = auth;
+        if (!window._firebaseDebug) {
+          console.info('[auth][client] firebase initialized', {
+            projectId: config.projectId,
+            hasMeasurement: !!config.measurementId
+          });
+          window._firebaseDebug = true;
+        }
+      }
     }
     return auth || null;
   } catch (e) {

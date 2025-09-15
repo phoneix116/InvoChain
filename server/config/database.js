@@ -14,9 +14,12 @@ class Database {
       }
 
       const mongoURI = process.env.MONGODB_URI;
-      
+
       if (!mongoURI) {
-        throw new Error('MONGODB_URI environment variable is not set');
+        console.warn('⚠️  MONGODB_URI not set. Starting in NO_DB mode (no persistence).');
+        console.warn('💡 Add MONGODB_URI to server/.env to enable MongoDB Atlas.');
+        this.isConnected = false;
+        return; // Skip attempting a connection
       }
 
       // Connection options
@@ -55,7 +58,7 @@ class Database {
       });
 
     } catch (error) {
-      console.error('❌ MongoDB connection failed:', error.message);
+  console.error('❌ MongoDB connection failed:', error.message);
       
       // Provide helpful error messages
       if (error.message.includes('authentication failed')) {
@@ -94,6 +97,9 @@ class Database {
   async healthCheck() {
     try {
       if (!this.isConnected) {
+        if (!process.env.MONGODB_URI) {
+          return { status: 'disabled', message: 'No MONGODB_URI configured (NO_DB mode)' };
+        }
         return { status: 'disconnected', message: 'Database not connected' };
       }
 

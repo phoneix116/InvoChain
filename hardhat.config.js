@@ -2,7 +2,9 @@ require("@nomicfoundation/hardhat-toolbox");
 require("@nomicfoundation/hardhat-verify");
 require("dotenv").config();
 
-const PRIVATE_KEY = process.env.PRIVATE_KEY || "0x0000000000000000000000000000000000000000000000000000000000000000";
+// Accept only a real 0x-prefixed 64-hex private key; otherwise ignore for external networks
+const rawKey = process.env.PRIVATE_KEY || "";
+const PRIVATE_KEY = /^0x[0-9a-fA-F]{64}$/.test(rawKey) ? rawKey : undefined;
 const SEPOLIA_RPC_URL = process.env.SEPOLIA_RPC_URL || "";
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY || "";
 
@@ -31,6 +33,7 @@ module.exports = {
     },
     sepolia: {
       url: SEPOLIA_RPC_URL,
+      // Only include account if a valid key was provided; prevents HH8 config error
       accounts: PRIVATE_KEY ? [PRIVATE_KEY] : [],
       chainId: 11155111
     }

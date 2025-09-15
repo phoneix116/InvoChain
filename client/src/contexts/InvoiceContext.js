@@ -18,13 +18,15 @@ export const useInvoice = () => {
 
 export const InvoiceProvider = ({ children }) => {
   const { signer, account } = useWallet();
-  const { user: authUser } = useAuth();
+  // Include idToken so we can gate protected searches until token is ready
+  const { user: authUser, authReady, idToken } = useAuth();
   const [userInvoices, setUserInvoices] = useState([]);
   const [userInfo, setUserInfo] = useState(null);
   const [loading, setLoading] = useState(false);
   const [contract, setContract] = useState(null);
   const [lastLoadTime, setLastLoadTime] = useState(0);
   const [autoVerifyAttempted, setAutoVerifyAttempted] = useState(false);
+  const [pendingLoad, setPendingLoad] = useState(false); // set when we skipped due to missing token
   // Enforce on-chain execution (previous dev skip removed). If env still set, warn once.
   const devSkipEnv = (process.env.REACT_APP_DEV_SKIP_ONCHAIN || '').toLowerCase() === 'true';
   useEffect(() => {
@@ -58,49 +60,67 @@ export const InvoiceProvider = ({ children }) => {
   }, [signer]);
 
   // Load user data and invoices from MongoDB
-  const loadUserInvoices = useCallback(async () => {
+  const loadUserInvoices = useCallback(async (opts = {}) => {
+    const { force = false } = opts;
     if (!account) return;
+
+    // If a Firebase user exists but token not yet ready, defer
+    if (authUser && !idToken) {
+      if (process.env.REACT_APP_DEBUG_AUTH === 'true') {
+        console.info('[InvoiceContext] Skipping invoice search until idToken ready');
+      }
+      setPendingLoad(true);
+      return;
+    }
 
     // Rate limiting: check if enough time has passed since last load
     const now = Date.now();
-    if (now - lastLoadTime < MIN_LOAD_INTERVAL) {
-      console.log('Rate limited: skipping API call');
+    if (!force && (now - lastLoadTime < MIN_LOAD_INTERVAL)) {
+      if (process.env.REACT_APP_DEBUG_AUTH === 'true') {
+        console.info('[InvoiceContext] Rate limited: skipping API call');
+      }
       return;
     }
 
     setLoading(true);
     setLastLoadTime(now);
-    
     try {
-      // Load user info and invoices from MongoDB
-      const [userResponse, invoicesResponse] = await Promise.all([
-        invoiceAPI.createOrGetUser({ 
-          walletAddress: account,
-          // Include Firebase profile details when available
-          name: authUser?.displayName,
-          email: authUser?.email,
-        }),
-        invoiceAPI.getUserInvoices(account)
-      ]);
+      // Step 1: ensure user exists (public endpoint)
+      const userResponse = await invoiceAPI.createOrGetUser({
+        walletAddress: account,
+        name: authUser?.displayName,
+        email: authUser?.email,
+      });
+      if (userResponse.user) setUserInfo(userResponse.user);
 
-      if (userResponse.user) {
-        setUserInfo(userResponse.user);
-      }
-
-      if (invoicesResponse.results) {
-        setUserInvoices(invoicesResponse.results);
-      } else {
-        setUserInvoices([]);
+      // Step 2: only fetch invoices when we either have an idToken (authenticated)
+      // or there is no authUser (edge dev case). If authUser exists but no token, we already returned earlier.
+      if (!authUser || (authUser && idToken)) {
+        try {
+          const invoicesResponse = await invoiceAPI.getUserInvoices(account);
+          if (invoicesResponse.results) {
+            setUserInvoices(invoicesResponse.results);
+          } else {
+            setUserInvoices([]);
+          }
+        } catch (invErr) {
+          // Handle 401 silently if token race still occurred
+          if (invErr.message?.includes('Unauthorized')) {
+            if (process.env.REACT_APP_DEBUG_AUTH === 'true') {
+              console.warn('[InvoiceContext] Invoice search unauthorized (likely token race), will retry later');
+            }
+          } else if (!invErr.message?.includes('Network error') && !invErr.message?.includes('Rate limit')) {
+            console.error('Failed to load invoices:', invErr.message);
+          }
+          setUserInvoices([]);
+        }
       }
     } catch (error) {
-      // Only log non-network errors to reduce console noise
       if (!error.message?.includes('Network error') && !error.message?.includes('Rate limit')) {
         console.error('Failed to load user data:', error.message);
       }
-      
-      // Only show toast for meaningful errors, avoid duplicates
       if (error.message?.includes('Network error')) {
-        // Don't show network error toasts as they're usually temporary
+        // Suppress noisy network toasts
       } else if (!document.querySelector('.Toastify__toast--error')) {
         toast.error('Failed to load invoices: ' + error.message);
       }
@@ -108,7 +128,8 @@ export const InvoiceProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [account, lastLoadTime]);
+  }, [account, lastLoadTime, authUser, idToken]);
+
 
   // Verify wallet ownership by signing a nonce from the server
   const verifyWalletOwnership = useCallback(async () => {
@@ -614,23 +635,40 @@ export const InvoiceProvider = ({ children }) => {
   // Load invoices on account change (with debouncing)
   useEffect(() => {
     let timeoutId;
-    
-    if (account) {
-      // Debounce the API call to prevent rapid successive calls
-      timeoutId = setTimeout(() => {
-        loadUserInvoices();
-      }, 500);
-    } else {
+    const debug = process.env.REACT_APP_DEBUG_AUTH === 'true';
+    if (!account) {
       setUserInvoices([]);
       setUserInfo(null);
+      return () => {};
     }
+    if (!authReady) {
+      if (debug) console.info('[invoice][client] waiting authReady before loading invoices');
+      return () => {};
+    }
+    if (authUser && !idToken) {
+      if (debug) console.info('[invoice][client] auth user present but idToken not yet ready');
+      return () => {};
+    }
+    // If we had a pending load (token just arrived), run immediately with force to bypass rate limit
+    if (pendingLoad) {
+      if (debug) console.info('[invoice][client] processing pending invoice load (force)');
+      loadUserInvoices({ force: true });
+      setPendingLoad(false);
+      return () => {};
+    }
+    timeoutId = setTimeout(() => {
+      if (debug) console.info('[invoice][client] loading invoices for account', account);
+      loadUserInvoices();
+    }, 300);
+    return () => timeoutId && clearTimeout(timeoutId);
+  }, [account, authReady, authUser, idToken, pendingLoad, loadUserInvoices]);
 
-    return () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-    };
-  }, [account]); // Removed loadUserInvoices to prevent infinite loop
+  // Expose manual reload helper in debug mode
+  useEffect(() => {
+    if (process.env.REACT_APP_DEBUG_AUTH === 'true' && typeof window !== 'undefined') {
+      window._reloadInvoices = () => loadUserInvoices({ force: true });
+    }
+  }, [loadUserInvoices]);
 
   const value = {
     userInvoices,

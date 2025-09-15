@@ -14,7 +14,8 @@ export const AuthProvider = ({ children }) => {
   const auth = useMemo(() => getFirebaseAuth(), []);
   const [user, setUser] = useState(null);
   const [idToken, setIdToken] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // still initializing listener
+  const [authReady, setAuthReady] = useState(false); // first onAuthStateChanged fired
 
   useEffect(() => {
     if (!auth) {
@@ -25,12 +26,17 @@ export const AuthProvider = ({ children }) => {
     const unsub = onAuthStateChanged(auth, async (fbUser) => {
       setUser(fbUser);
       if (fbUser) {
-        const token = await getIdToken(fbUser, true);
-        setIdToken(token);
+        try {
+          const token = await getIdToken(fbUser, true);
+          setIdToken(token);
+        } catch (e) {
+          // silent token fetch failure
+        }
       } else {
         setIdToken(null);
       }
       setLoading(false);
+      setAuthReady(true);
     });
     return () => unsub();
   }, [auth]);
@@ -50,7 +56,8 @@ export const AuthProvider = ({ children }) => {
     user,
     idToken,
     loading,
-  configured: !!auth,
+    authReady,
+    configured: !!auth,
     isAuthenticated: !!user,
     signInWithGoogle,
     logout,

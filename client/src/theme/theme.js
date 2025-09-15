@@ -42,17 +42,23 @@ const commonStatus = {
 
 const shape = { borderRadius: 12 };
 
-const shadowsLight = [
+function extendShadows(base, filler) {
+  const arr = [...base];
+  while (arr.length < 25) arr.push(filler);
+  return arr;
+}
+
+const shadowsLight = extendShadows([
   'none',
   '0 1px 2px rgba(0,0,0,0.06)',
   '0 1px 4px rgba(0,0,0,0.08)',
   '0 2px 6px rgba(0,0,0,0.10)',
   '0 4px 12px rgba(0,0,0,0.12)',
   '0 6px 18px rgba(0,0,0,0.14)',
-  '0 8px 24px rgba(0,0,0,0.16)' // we won't use beyond index 6
-];
+  '0 8px 24px rgba(0,0,0,0.16)'
+], '0 8px 24px rgba(0,0,0,0.16)');
 
-const shadowsDark = [
+const shadowsDark = extendShadows([
   'none',
   '0 1px 2px rgba(0,0,0,0.4)',
   '0 2px 4px rgba(0,0,0,0.45)',
@@ -60,7 +66,7 @@ const shadowsDark = [
   '0 6px 16px rgba(0,0,0,0.55)',
   '0 8px 22px rgba(0,0,0,0.6)',
   '0 12px 32px rgba(0,0,0,0.65)'
-];
+], '0 12px 32px rgba(0,0,0,0.65)');
 
 const components = (mode) => ({
   MuiButton: {
