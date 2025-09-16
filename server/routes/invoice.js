@@ -243,6 +243,7 @@ router.get('/search', async (req, res) => {
       maxAmount,
       startDate,
       endDate,
+      blockchainId,
       limit = 20, 
       offset = 0,
       sortBy = 'createdAt',
@@ -287,6 +288,14 @@ router.get('/search', async (req, res) => {
     if (status) {
       searchQuery.status = status;
     }
+
+    // Filter by blockchain invoice id (numeric) if provided
+    if (blockchainId) {
+      const numericId = parseInt(blockchainId, 10);
+      if (!isNaN(numericId)) {
+        searchQuery['blockchain.invoiceId'] = numericId;
+      }
+    }
     
     // Filter by amount range
     if (minAmount || maxAmount) {
@@ -322,6 +331,10 @@ router.get('/search', async (req, res) => {
       ...invoice,
       amount: parseFloat(invoice.amount.toString()),
       formattedAmount: parseFloat(invoice.amount.toString()).toFixed(4),
+      blockchain: {
+        invoiceId: invoice.blockchain?.invoiceId || null,
+        transactionHash: invoice.blockchain?.transactionHash || null
+      },
       daysUntilDue: invoice.dueDate ? Math.ceil((new Date(invoice.dueDate) - new Date()) / (1000 * 60 * 60 * 24)) : null,
       isOverdue: invoice.status === 'pending' && invoice.dueDate && new Date() > new Date(invoice.dueDate)
     }));
@@ -1063,7 +1076,7 @@ router.put('/users/:walletAddress/preferences', async (req, res) => {
 router.put('/invoices/:invoiceId/status', async (req, res) => {
   try {
     const { invoiceId } = req.params;
-    const { status, transactionHash, blockNumber } = req.body;
+  const { status, transactionHash, blockNumber, blockchainInvoiceId } = req.body;
 
     const invoice = await Invoice.findOne({ invoiceId });
     if (!invoice) {
@@ -1074,6 +1087,10 @@ router.put('/invoices/:invoiceId/status', async (req, res) => {
     }
 
     const prevStatus = invoice.status;
+
+    if (Number.isFinite(blockchainInvoiceId) && !invoice.blockchain.invoiceId) {
+      invoice.blockchain.invoiceId = blockchainInvoiceId;
+    }
 
     if (status === 'paid') {
       await invoice.markAsPaid(transactionHash, blockNumber);
@@ -1089,6 +1106,7 @@ router.put('/invoices/:invoiceId/status', async (req, res) => {
       message: 'Invoice status updated successfully',
       invoice: {
         invoiceId: invoice.invoiceId,
+        blockchainInvoiceId: invoice.blockchain.invoiceId,
         status: invoice.status,
         paidDate: invoice.paidDate,
         transactionHash: invoice.blockchain.transactionHash

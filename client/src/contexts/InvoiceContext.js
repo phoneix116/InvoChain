@@ -99,7 +99,23 @@ export const InvoiceProvider = ({ children }) => {
         try {
           const invoicesResponse = await invoiceAPI.getUserInvoices(account);
           if (invoicesResponse.results) {
-            setUserInvoices(invoicesResponse.results);
+            // Normalize status to a consistent numeric code for UI counters
+            const mapStatusToNumeric = (status) => {
+              if (typeof status !== 'string') return status; // already numeric or unexpected
+              const s = status.toLowerCase();
+              if (s === 'paid') return 1;
+              if (s === 'disputed') return 2;
+              if (s === 'resolved') return 3;
+              if (s === 'cancelled') return 4;
+              // treat draft / pending / overdue / created / unknown as Created (0)
+              return 0;
+            };
+            const normalized = invoicesResponse.results.map(inv => ({
+              ...inv,
+              _rawStatus: inv.status, // keep original for any detailed views
+              status: mapStatusToNumeric(inv.status)
+            }));
+            setUserInvoices(normalized);
           } else {
             setUserInvoices([]);
           }
@@ -269,7 +285,8 @@ export const InvoiceProvider = ({ children }) => {
         await invoiceAPI.updateInvoiceStatus(invoice.invoiceId, {
           status: 'pending',
           transactionHash: receipt.transactionHash,
-          blockNumber: receipt.blockNumber
+          blockNumber: receipt.blockNumber,
+          blockchainInvoiceId: Number(blockchainInvoiceId)
         });
       }
 
@@ -306,6 +323,23 @@ export const InvoiceProvider = ({ children }) => {
     try {
       setLoading(true);
 
+      // Optional pre-flight status check to give clearer error than generic revert
+      try {
+        const onChain = await contract.getInvoice(invoiceId);
+        // status enum: 0 Created, 1 Paid, 2 Disputed, 3 Resolved, 4 Cancelled
+        if (onChain.status.toNumber && onChain.status.toNumber() !== 0) {
+          const statusEnum = onChain.status.toNumber();
+            const map = { 0: 'Created', 1: 'Paid', 2: 'Disputed', 3: 'Resolved', 4: 'Cancelled' };
+          throw new Error(`Invoice status is ${map[statusEnum]}. Only 'Created' invoices can be paid.`);
+        }
+      } catch (prefetchErr) {
+        if (prefetchErr.message && prefetchErr.message.startsWith('Invoice status is')) {
+          toast.error(prefetchErr.message);
+          throw prefetchErr;
+        }
+        // Ignore failures in preflight (e.g. method missing) and proceed
+      }
+
       const tx = await contract.payInvoiceETH(invoiceId, {
         value: ethers.utils.parseEther(amount.toString())
       });
@@ -315,18 +349,19 @@ export const InvoiceProvider = ({ children }) => {
 
       // Update status in MongoDB
       try {
-        // Find the invoice by blockchain ID and mark as paid
-        const invoices = await invoiceAPI.searchInvoices({ 
-          walletAddress: account, 
-          blockchainId: invoiceId 
-        });
-        
-        if (invoices.results && invoices.results.length > 0) {
-          await invoiceAPI.markInvoiceAsPaid(invoices.results[0]._id, receipt.transactionHash);
+        // Find the invoice by blockchain ID (server now supports blockchainId filter)
+        const search = await invoiceAPI.searchInvoices({ walletAddress: account, blockchainId: invoiceId });
+        const target = search.results && search.results[0];
+        if (target) {
+          // Update status using unified status endpoint
+          await invoiceAPI.updateInvoiceStatus(target.invoiceId, {
+            status: 'paid',
+            transactionHash: receipt.transactionHash,
+            blockchainInvoiceId: Number(invoiceId)
+          });
         }
       } catch (dbError) {
         console.error('Failed to update invoice status in database:', dbError);
-        // Don't fail the entire operation for database update errors
       }
 
       toast.success('Payment completed successfully!');
@@ -372,14 +407,27 @@ export const InvoiceProvider = ({ children }) => {
       await approveTx.wait();
 
       // Then pay the invoice
-      const tx = await contract.payInvoiceToken(invoiceId);
+  const tx = await contract.payInvoiceToken(invoiceId);
 
       toast.info('Payment submitted. Waiting for confirmation...');
       const receipt = await tx.wait();
 
+      // Update status in MongoDB
+      try {
+        const search = await invoiceAPI.searchInvoices({ walletAddress: account, blockchainId: invoiceId });
+        const target = search.results && search.results[0];
+        if (target) {
+          await invoiceAPI.updateInvoiceStatus(target.invoiceId, {
+            status: 'paid',
+            transactionHash: receipt.transactionHash,
+            blockchainInvoiceId: Number(invoiceId)
+          });
+        }
+      } catch (dbError) {
+        console.error('Failed to update invoice status in database (token):', dbError);
+      }
+
       toast.success('Payment completed successfully!');
-      
-      // Reload user invoices
       await loadUserInvoices();
 
       return {
@@ -483,6 +531,7 @@ export const InvoiceProvider = ({ children }) => {
         // Normalize to the shape InvoiceDetails expects
         return {
           id: inv.blockchain?.invoiceId || invoiceId,
+          blockchainId: inv.blockchain?.invoiceId || null,
           ipfsHash: inv.ipfs?.hash || inv.ipfsHash,
           issuer: inv.issuer?.walletAddress || inv.issuer,
           recipient: inv.recipient?.walletAddress || inv.recipient,
@@ -675,6 +724,11 @@ export const InvoiceProvider = ({ children }) => {
     userInfo,
     loading,
     contract,
+    // expose for debugging in dev environments
+    _debugGetInvoice: async (id) => {
+      if (!contract) return null;
+      try { return await contract.getInvoice(id); } catch (e) { return e.message; }
+    },
     createInvoice,
     payInvoiceETH,
     payInvoiceToken,

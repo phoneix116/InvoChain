@@ -127,27 +127,27 @@ const InvoiceDetails = () => {
 
   const handlePayInvoice = async () => {
     if (!invoice) return;
-    
+    const blockchainId = invoice.blockchainId || (/^\d+$/.test(id) ? id : null);
+    if (!blockchainId) {
+      alert('On-chain invoice id not available yet. Please wait a moment and refresh.');
+      return;
+    }
     try {
       setPaymentLoading(true);
-      
-      // Convert amount from wei to ETH for payment
-      const amountInETH = (parseFloat(invoice.amount) / 1e18).toString();
-      
-      // Check if it's a token payment or ETH payment
+      const rawVal = typeof invoice.amount === 'object' ? parseFloat(invoice.amount.toString()) : parseFloat(invoice.amount);
+      const isWeiLike = !isNaN(rawVal) && rawVal > 1e12; // heuristic
+      const amountEth = isWeiLike ? (rawVal / 1e18) : rawVal;
+      const amountStr = amountEth.toString();
       if (invoice.tokenAddress && invoice.tokenAddress !== '0x0000000000000000000000000000000000000000') {
-        await payInvoiceToken(id, invoice.tokenAddress, amountInETH);
+        await payInvoiceToken(blockchainId, invoice.tokenAddress, amountStr);
       } else {
-        await payInvoiceETH(id, amountInETH);
+        await payInvoiceETH(blockchainId, amountStr);
       }
-      
-      // Reload invoice data to get updated status
-      const updatedInvoice = await getInvoiceDetails(id);
+      const updatedInvoice = await getInvoiceDetails(String(blockchainId));
       setInvoice(updatedInvoice);
-      
     } catch (error) {
       console.error('Payment failed:', error);
-      alert('Payment failed. Please try again.');
+      alert(error.message || 'Payment failed. Please try again.');
     } finally {
       setPaymentLoading(false);
     }
@@ -476,7 +476,7 @@ const InvoiceDetails = () => {
                 >
                   {invoice?.ipfsHash ? 'Download PDF' : 'PDF Not Available'}
                 </Button>
-                {invoice.status === 0 && /^\d+$/.test(String(id)) && (
+                {invoice.status === 0 && (invoice.blockchainId || /^\d+$/.test(String(id))) && (
                   <Button
                     variant="contained"
                     startIcon={<Payment />}

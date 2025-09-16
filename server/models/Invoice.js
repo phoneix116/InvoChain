@@ -94,6 +94,11 @@ const invoiceSchema = new mongoose.Schema({
 
   // Blockchain data
   blockchain: {
+    invoiceId: { // numeric on-chain invoice id
+      type: Number,
+      index: true,
+      sparse: true
+    },
     contractAddress: {
       type: String,
       lowercase: true
