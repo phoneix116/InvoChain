@@ -21,6 +21,8 @@ export const InvoiceProvider = ({ children }) => {
   // Include idToken so we can gate protected searches until token is ready
   const { user: authUser, authReady, idToken } = useAuth();
   const [userInvoices, setUserInvoices] = useState([]);
+  const [sentInvoices, setSentInvoices] = useState([]);
+  const [receivedInvoices, setReceivedInvoices] = useState([]);
   const [userInfo, setUserInfo] = useState(null);
   const [loading, setLoading] = useState(false);
   const [contract, setContract] = useState(null);
@@ -112,12 +114,19 @@ export const InvoiceProvider = ({ children }) => {
             };
             const normalized = invoicesResponse.results.map(inv => ({
               ...inv,
-              _rawStatus: inv.status, // keep original for any detailed views
+              _rawStatus: inv.status,
               status: mapStatusToNumeric(inv.status)
             }));
             setUserInvoices(normalized);
+            if (account) {
+              const lower = account.toLowerCase();
+              setSentInvoices(normalized.filter(i => i.issuer?.walletAddress === lower));
+              setReceivedInvoices(normalized.filter(i => i.recipient?.walletAddress === lower));
+            }
           } else {
             setUserInvoices([]);
+            setSentInvoices([]);
+            setReceivedInvoices([]);
           }
         } catch (invErr) {
           // Handle 401 silently if token race still occurred
@@ -721,6 +730,8 @@ export const InvoiceProvider = ({ children }) => {
 
   const value = {
     userInvoices,
+  sentInvoices,
+  receivedInvoices,
     userInfo,
     loading,
     contract,
