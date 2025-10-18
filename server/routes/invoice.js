@@ -64,11 +64,21 @@ const userSchema = Joi.object({
 async function getOrCreateUser(walletAddress, userData = {}) {
   try {
     let user = await User.findByWallet(walletAddress);
-    
+
+    // Normalize optional fields so empty strings don't get persisted
+    const normalizedUserData = { ...userData };
+    if (Object.prototype.hasOwnProperty.call(normalizedUserData, 'email')) {
+      if (normalizedUserData.email) {
+        normalizedUserData.email = normalizedUserData.email.toLowerCase();
+      } else {
+        delete normalizedUserData.email;
+      }
+    }
+
     if (!user) {
       user = new User({
         walletAddress: walletAddress.toLowerCase(),
-        ...userData
+        ...normalizedUserData
       });
       await user.save();
       console.log(`✅ Created new user: ${walletAddress}`);
@@ -79,9 +89,12 @@ async function getOrCreateUser(walletAddress, userData = {}) {
         user.name = userData.name;
         mutated = true;
       }
-      if (userData.email && user.email !== userData.email) {
-        user.email = userData.email.toLowerCase();
-        mutated = true;
+      if (Object.prototype.hasOwnProperty.call(userData, 'email')) {
+        const nextEmail = userData.email ? userData.email.toLowerCase() : undefined;
+        if (user.email !== nextEmail) {
+          user.email = nextEmail;
+          mutated = true;
+        }
       }
       if (userData.company && user.company !== userData.company) {
         user.company = userData.company;
@@ -255,11 +268,17 @@ router.get('/search', async (req, res) => {
     
     // Filter by wallet address (user's invoices)
     if (walletAddress) {
-      const user = await User.findByWallet(walletAddress);
+      const lower = walletAddress.toLowerCase();
+      const user = await User.findByWallet(lower);
       if (user) {
-        searchQuery.userId = user._id;
+        // Include invoices where this user is issuer (userId) OR recipient wallet matches
+        searchQuery.$or = [
+          { userId: user._id },
+          { 'recipient.walletAddress': lower }
+        ];
       } else {
-        return res.json({ success: true, invoices: [], total: 0 });
+        // Recipient might not have user profile yet: still show invoices addressed to them
+        searchQuery['recipient.walletAddress'] = lower;
       }
     }
     
@@ -327,17 +346,23 @@ router.get('/search', async (req, res) => {
     ]);
     
     // Format results
-    const formattedInvoices = invoices.map(invoice => ({
-      ...invoice,
-      amount: parseFloat(invoice.amount.toString()),
-      formattedAmount: parseFloat(invoice.amount.toString()).toFixed(4),
-      blockchain: {
-        invoiceId: invoice.blockchain?.invoiceId || null,
-        transactionHash: invoice.blockchain?.transactionHash || null
-      },
-      daysUntilDue: invoice.dueDate ? Math.ceil((new Date(invoice.dueDate) - new Date()) / (1000 * 60 * 60 * 24)) : null,
-      isOverdue: invoice.status === 'pending' && invoice.dueDate && new Date() > new Date(invoice.dueDate)
-    }));
+    const lowerWallet = walletAddress ? walletAddress.toLowerCase() : null;
+    const formattedInvoices = invoices.map(invoice => {
+      const amountNum = parseFloat(invoice.amount.toString());
+      const role = lowerWallet ? (invoice.issuer?.walletAddress === lowerWallet ? 'issuer' : (invoice.recipient?.walletAddress === lowerWallet ? 'recipient' : 'other')) : undefined;
+      return {
+        ...invoice,
+        amount: amountNum,
+        formattedAmount: amountNum.toFixed(4),
+        blockchain: {
+          invoiceId: invoice.blockchain?.invoiceId || null,
+          transactionHash: invoice.blockchain?.transactionHash || null
+        },
+        role,
+        daysUntilDue: invoice.dueDate ? Math.ceil((new Date(invoice.dueDate) - new Date()) / (1000 * 60 * 60 * 24)) : null,
+        isOverdue: invoice.status === 'pending' && invoice.dueDate && new Date() > new Date(invoice.dueDate)
+      };
+    });
 
     console.log('🔍 Search API returning invoices:', formattedInvoices.map(inv => ({
       _id: inv._id,
