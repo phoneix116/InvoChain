@@ -12,8 +12,19 @@ async function waitForAuthUser(auth, { maxMs = 800, interval = 50 } = {}) {
   return auth.currentUser;
 }
 
-// Default to 3001 where the Express server runs (was 3002 causing mismatched base URL when env unset)
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+// Choose API base URL dynamically:
+// - If REACT_APP_API_URL is set, use it.
+// - Else, if running in the browser and not on localhost, use current origin (same-domain backend).
+// - Else, default to localhost:3001 for local development.
+const API_BASE_URL = (() => {
+  if (process.env.REACT_APP_API_URL) return process.env.REACT_APP_API_URL;
+  if (typeof window !== 'undefined' && window.location) {
+    const host = window.location.hostname || '';
+    const isLocal = /^(localhost|127\.0\.0\.1)$/i.test(host);
+    if (!isLocal) return window.location.origin;
+  }
+  return 'http://localhost:3001';
+})();
 
 const api = axios.create({
   baseURL: `${API_BASE_URL}/api/invoice`,

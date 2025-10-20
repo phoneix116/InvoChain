@@ -92,8 +92,20 @@ const limiter = rateLimit({
 app.use('/api/', limiter);
 
 // CORS configuration
+const PROD_ORIGINS = (process.env.CORS_ALLOWED_ORIGINS || '')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
+const DEFAULT_DEV_ORIGINS = ['http://localhost:3000', 'http://127.0.0.1:3000'];
+const allowedOrigins = [...DEFAULT_DEV_ORIGINS, ...PROD_ORIGINS];
+
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  origin: function(origin, callback) {
+    // Allow requests with no origin like curl or mobile apps
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error('CORS not allowed from origin: ' + origin), false);
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']

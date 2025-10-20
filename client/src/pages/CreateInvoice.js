@@ -106,7 +106,8 @@ const CreateInvoice = () => {
       setActiveStep(1);
     } catch (error) {
       console.error('Failed to generate PDF preview:', error);
-      toast.error('Failed to generate PDF preview');
+      const msg = (error && error.message) ? String(error.message) : 'Unknown error';
+      toast.error(`Failed to generate PDF preview: ${msg}`);
     } finally {
       setGeneratingPDF(false);
     }
