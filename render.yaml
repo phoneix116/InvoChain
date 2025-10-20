@@ -1,0 +1,107 @@
+# Render Blueprint for Invoice Chain Backend
+# This file configures automatic deployment to Render.com
+
+services:
+  # Backend API Server
+  - type: web
+    name: invoicechain-backend
+    env: node
+    region: oregon  # Choose: oregon, frankfurt, singapore, ohio
+    plan: free  # Options: free, starter ($7/mo), standard ($25/mo)
+    
+    # Build settings
+    buildCommand: cd server && npm install
+    startCommand: cd server && npm start
+    
+    # Health check
+    healthCheckPath: /health
+    
+    # Auto-deploy from main branch
+    branch: main
+    
+    # Environment variables (set these in Render dashboard)
+    envVars:
+      - key: NODE_ENV
+        value: production
+      
+      - key: PORT
+        value: 3001
+      
+      - key: LOG_LEVEL
+        value: info
+      
+      # MongoDB - Add your connection string in Render dashboard
+      - key: MONGODB_URI
+        sync: false  # Set manually in dashboard
+      
+      # Blockchain
+      - key: SEPOLIA_RPC_URL
+        sync: false
+      
+      - key: PRIVATE_KEY
+        sync: false
+      
+      - key: CONTRACT_ADDRESS
+        sync: false
+      
+      # IPFS/Pinata
+      - key: PINATA_JWT
+        sync: false
+      
+      - key: PINATA_API_KEY
+        sync: false
+      
+      - key: PINATA_SECRET_KEY
+        sync: false
+      
+      - key: PINATA_DISABLED
+        value: false
+      
+      - key: IPFS_GATEWAY
+        sync: false
+      
+      # Firebase Admin
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      
+      - key: FIREBASE_CLIENT_EMAIL
+        sync: false
+      
+      - key: FIREBASE_PRIVATE_KEY
+        sync: false  # Important: Set in dashboard, not here
+      
+      - key: FIREBASE_ADMIN_ENABLED
+        value: true
+      
+      # AI
+      - key: OPENAI_API_KEY
+        sync: false
+      
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
+      
+      # Email (Mailgun)
+      - key: EMAIL_PROVIDER
+        value: mailgun
+      
+      - key: MAILGUN_API_KEY
+        sync: false
+      
+      - key: MAILGUN_DOMAIN
+        sync: false
+      
+      - key: MAILGUN_BASE_URL
+        value: https://api.mailgun.net
+      
+      - key: MAILGUN_FROM
+        sync: false
+      
+      # CORS - Update with your frontend URL
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://your-frontend-url.vercel.app
+      
+      - key: CLIENT_URL
+        value: https://your-frontend-url.vercel.app
+
+# Note: Variables marked "sync: false" must be added manually in the Render dashboard
+# for security reasons. Never commit sensitive keys to Git.
