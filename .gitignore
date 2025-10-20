@@ -128,7 +128,7 @@ Thumbs.db
 
 # Contract deployment addresses (will be generated)
 deployments/
-/client/src/contracts/InvoiceManager.json
+
 
 # IPFS files
 ipfs/
