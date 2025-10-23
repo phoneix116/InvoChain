@@ -341,8 +341,10 @@ export const InvoiceProvider = ({ children }) => {
       try {
         const onChain = await contract.getInvoice(invoiceId);
         // status enum: 0 Created, 1 Paid, 2 Disputed, 3 Resolved, 4 Cancelled
-        if (onChain.status.toNumber && onChain.status.toNumber() !== 0) {
-          const statusEnum = onChain.status.toNumber();
+        const statusEnum = (typeof onChain.status === 'number')
+          ? onChain.status
+          : (onChain.status?.toNumber ? onChain.status.toNumber() : Number(onChain.status));
+        if (Number.isFinite(statusEnum) && statusEnum !== 0) {
             const map = { 0: 'Created', 1: 'Paid', 2: 'Disputed', 3: 'Resolved', 4: 'Cancelled' };
           throw new Error(`Invoice status is ${map[statusEnum]}. Only 'Created' invoices can be paid.`);
         }
