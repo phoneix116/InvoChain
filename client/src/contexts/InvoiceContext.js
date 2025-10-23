@@ -45,7 +45,12 @@ export const InvoiceProvider = ({ children }) => {
     const loadContract = async () => {
       if (signer) {
         try {
-          const contractData = await import('../contracts/InvoiceManager.json');
+          // Some bundlers (prod builds) wrap JSON under .default; support both shapes
+          const mod = await import('../contracts/InvoiceManager.json');
+          const contractData = mod?.default || mod;
+          if (!contractData?.address || !contractData?.abi) {
+            throw new Error('Invalid contract artifact: missing address or abi');
+          }
           const contractInstance = new ethers.Contract(
             contractData.address,
             contractData.abi,
