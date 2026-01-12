@@ -388,11 +388,15 @@ npx hardhat run scripts/deploy.js --network sepolia
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 👨‍💻 Author
+ ## 👨‍💻 Author
 
-**phoneix116**
+**Cyril Sabu George**
 - GitHub: [@phoneix116](https://github.com/phoneix116)
-- Repository: [BlockChain-Project](https://github.com/phoneix116/BlockChain-Project)
+- Portfolio: [www.linkedin.com/in/cyrilsabugeorge]
+
+## Support
+
+For support, email cyrilsabug@gmail.com or open an issue on GitHub.
 
 ## 🙏 Acknowledgments
 
